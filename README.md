@@ -7,5 +7,7 @@ If you adapt ot re-use any of my scripts, please consider citing this repository
 Thanks for visiting this repository!
 
 Rafael S. Marcondes
+
 Louisiana State University
+
 June 2019
