@@ -1,0 +1,195 @@
+#######Script used to produce Figure 1 in a manuscript entitled "Realistic scenarios of missing taxa###
+#######in phylogenetic comparative methods and their effects on model selection and parameter estimation", 
+#######submitted to PeerJ on June 2019.
+
+#######I freely admit that my scripts are poorly-annotated, clunky, innefficient and just plain ugly. If 
+#######nevertheless you are a brave soul and will dare to try to understand and re-use them, please feel free to 
+#######contact me at raf.marcondes@gmail.com if you need help.
+
+#######If you adapt or re-use any of my scripts, please consider citing my PeerJ 
+#######manuscript in any resulting publications.
+
+#######Thanks for looking at my scripts!
+
+#######Rafael S. Marcondes
+
+#######Louisiana State University
+
+#######June 2019
+
+setwd('/Users/Rafael/Dropbox/data_and_scripts/missdata/')
+library(ape)
+library(phytools)
+library(OUwie)
+library(dplyr)
+library(tibble)
+library(geiger)
+library(caper)
+library(castor)
+library(plotrix)
+
+initialntips=333
+GENMODEL='OUM'
+THETA0=0
+THETA1=1
+SIGMA0=0.5
+SIGMA1=1
+ALPHA=100
+PMISSING=0.1
+
+continue=F
+while(continue==F){
+#simulate tree
+basetr=rphylo(n=initialntips,birth=1,death=0) #generate random tree
+basetr=geiger::rescale(x=basetr,model='depth',depth=1)#rescale tree to have depth=1
+
+tipdata=as.data.frame(matrix(nrow=initialntips,ncol=2)) #matrix where i'll store tip data
+tipdata[,1]=basetr$tip.label
+colnames(tipdata)=c('tip', 'regime')
+
+#simulate regimes
+Q=matrix(nrow=2,ncol=2,data=c(-0.5,0.5,0.5,-0.5))
+regimes=simulate_mk_model(tree=basetr,Q=Q,root_probabilities=c(1,0))
+regimes$tip_states=as.character(regimes$tip_states)
+regimes$tip_states=gsub(x=regimes$tip_states,pattern='1',replacement='regime1')
+regimes$tip_states=gsub(x=regimes$tip_states,pattern='2',replacement='regime2')
+regimes$node_states=gsub(x=regimes$node_states,pattern='1',replacement='regime1')
+regimes$node_states=gsub(x=regimes$node_states,pattern='2',replacement='regime2')
+tipdata$regime=regimes$tip_states
+basetr$node.label=regimes$node_states
+
+GENMODEL='OUM'
+#simulate trait of interest (the one that i'll simulate under various models)
+if (GENMODEL=='OUM'){
+	alpha=c(ALPHA,ALPHA)
+	sigma.sq=c(SIGMA0,SIGMA0)
+	theta=c(THETA0,THETA1)
+}
+#simulate trait of interest
+interest=OUwie.sim(phy=basetr,
+				data=tipdata[,1:2],
+				alpha=alpha,
+				sigma.sq=sigma.sq,
+				theta0=0,
+				theta=theta
+				)
+
+interest=interest[,c(1,3)]
+tipdata=merge(tipdata,interest,by=1,sort=F)
+colnames(tipdata)[3]='interest'
+
+
+#corrMT
+tipdata[,4]=tipdata$interest/sum(tipdata$interest)-min(tipdata$interest/sum(tipdata$interest))
+colnames(tipdata)[4]='pmissing'
+tipdata[,5]=rep(x='sampled',times=initialntips)
+names(tipdata)[5]='missing'
+miss=sample.int(n=nrow(tipdata),size=PMISSING*nrow(tipdata),prob=tipdata$pmissing)
+for (t in miss){tipdata[t,5]='missing'}
+tipdata$pmissing=NULL
+colnames(tipdata)[4]='corrmt'
+
+#clumt
+L=OUwie.sim(phy=basetr,data=tipdata,alpha=c(0,0),sigma.sq=c(1,1),theta0=0,theta=c(0,0))
+thresh=quantile(x=L[,3],probs=PMISSING) #find threshold
+L[,2]=NULL
+tipdata=merge(tipdata,L,by=1,sort=F)
+colnames(tipdata)[5]='Liability'
+tipdata[,6]=rep(x=NA, times=nrow(tipdata))
+colnames(tipdata)[6]='clumt'
+for (t in 1:nrow(tipdata)){
+	if (tipdata[t,5]>=thresh){tipdata[t,6]='sampled'}
+	if (tipdata[t,5]<thresh){tipdata[t,6]='missing'}}
+tipdata$Liability=NULL
+
+#rmt
+tipdata[,6]=sample(x=c('missing','sampled'),size=nrow(tipdata),replace=T,prob=c(PMISSING,1-PMISSING))
+colnames(tipdata)[6]='rmt'
+
+dtree=basetr
+dtree$node.label=NULL
+bla=comparative.data(phy=dtree,data=tipdata,names.col=tip)
+
+d.clumt=phylo.d(data=bla,
+								binvar=clumt,
+								permut=10)$DEstimate
+
+d.corrmt=phylo.d(data=bla,
+								binvar=corrmt,
+								permut=10)$DEstimate
+
+d.rmt=phylo.d(data=bla,
+								binvar=rmt,
+								permut=10)$DEstimate
+
+
+secreg=(min(table(filter(tipdata,corrmt=='sampled')[,2])))/333
+cat(secreg,'\n')
+if(secreg<=0.45&&secreg>=0.25){continue=T}
+
+	
+	
+}
+
+#########################plots#################
+pdf('/Users/Rafael/Dropbox/data_and_scripts/missdata/results/figure 1.pdf',height=8.27,width=8.27)
+mat=matrix(nrow=2,ncol=2,data=c(1,2,3,4))
+layout(mat=mat)
+par(mar=c(2,2,2,2),xpd=T)
+
+
+plot(basetr,show.tip.label=F,type='fan')
+misstips=gsub(x=filter(.data=tipdata,rmt=='missing')$tip,pattern='t',replacement='') #get indices of missing tips
+tiplabels(tip=as.numeric(misstips),pch=19,col='black',cex=1,offset=0.06) #symbol on missing tips
+tipcolors=tipdata[,3]
+names(tipcolors)=tipdata[,1]
+tipcolors=sort(tipcolors)
+tips=as.numeric(gsub(x=names(tipcolors),pattern='t',replacement=''))
+tipcolors=rev(rainbow(length(tipcolors),start=1/6,end=4/6))
+tiplabels(tip=tips,col=tipcolors,pch=19,cex=1)
+color.legend(xl=-1.05,yb=0.9,xr=-1,yt=1.1,
+						 rect.col=tipcolors,
+						 gradient='y',align='rb',cex=1,legend='')
+text(x=-0.77,y=1,labels='Trait value',cex=1,xpd=T)
+points(x=-1.025,y=1.2,type='p',pch=19,cex=1,xpd=T)
+text(x=-0.77,y=1.2,labels='Missing tip',cex=1,xpd=T)
+text(labels='A',cex=2,x=-1,y=-0.8)
+
+plot(basetr,show.tip.label=F,type='fan')
+misstips=gsub(x=filter(.data=tipdata,corrmt=='missing')$tip,pattern='t',replacement='') #get indices of missing tips
+tiplabels(tip=as.numeric(misstips),pch=19,col='black',cex=1,offset=0.06) #symbol on missing tips
+tipcolors=tipdata[,3]
+names(tipcolors)=tipdata[,1]
+tipcolors=sort(tipcolors)
+tips=as.numeric(gsub(x=names(tipcolors),pattern='t',replacement=''))
+tipcolors=rev(rainbow(length(tipcolors),start=1/6,end=4/6))
+tiplabels(tip=tips,col=tipcolors,pch=19,cex=1)
+text(labels='C',cex=2,x=-1,y=-0.8)
+
+plot(basetr,show.tip.label=F,type='fan')
+misstips=gsub(x=filter(.data=tipdata,clumt=='missing')$tip,pattern='t',replacement='') #get indices of missing tips
+tiplabels(tip=as.numeric(misstips),pch=19,col='black',cex=1,offset=0.06) #symbol on missing tips
+tipcolors=tipdata[,3]
+names(tipcolors)=tipdata[,1]
+tipcolors=sort(tipcolors)
+tips=as.numeric(gsub(x=names(tipcolors),pattern='t',replacement=''))
+tipcolors=rev(rainbow(length(tipcolors),start=1/6,end=4/6))
+tiplabels(tip=tips,col=tipcolors,pch=19,cex=1)
+text(labels='B',cex=2,x=-1,y=-0.8)
+
+plot(basetr,cex=0.2,type='fan',show.tip.label = F)
+tipcols=tipdata[,1:2]
+tipcols$tip=as.numeric(gsub(x=tipcols$tip,pattern='t',replacement=''))
+tipcols=tipcols[order(tipcols$tip),]
+tipcols=tipcols$regime
+tipcols=gsub(x=tipcols,pattern='regime1',replacement='red')
+tipcols=gsub(x=tipcols,pattern='regime2',replacement='blue')
+nodecols=as.character(basetr$node.label)
+nodecols=gsub(x=nodecols,pattern='regime1',replacement='red')
+nodecols=gsub(x=nodecols,pattern='regime2',replacement='blue')
+nodelabels(col=nodecols,pch=19,cex=1)
+tiplabels(col=tipcols,pch=19,offset=0,cex=1)
+text(labels='D',cex=2,x=-1,y=-0.8)
+
+dev.off()
+
