@@ -1,0 +1,378 @@
+#######A function to simulate random (if 	RANDOMMISSING=T) or clumped missing taxa in phylogenetic####
+#######comparative datasets, as described in a manuscript entitled "Realistic scenarios of missing taxa###
+#######in phylogenetic comparative methods and their effects on model selection and parameter estimation", 
+#######submitted to PeerJ on June 2019.
+
+#######I freely admit that my scripts are poorly-annotated, clunky, innefficient and just plain ugly. If 
+#######nevertheless you are a brave soul and will dare to try to understand and re-use them, please feel free to 
+#######contact me at raf.marcondes@gmail.com if you need help.
+
+#######If you adapt ot re-use any of my scripts, please consider citing this repository or the PeerJ 
+#######manuscript in any resulting publications.
+
+#######Thanks for looking at my scripts!
+
+#######Rafael S. Marcondes
+
+#######Louisiana State University
+
+#######June 2019
+
+
+##################################################################################################################################
+missing_data_function=function(
+	NTIPS,
+	ADJUSTNTIPS=T,
+	PMISSING,
+	GENMODEL,
+	SMALLREGIME=0.35,
+	THETA0=0,
+	THETA1=1,
+	SIGMA0=0.5,
+	SIGMA1=1,
+	ALPHA=1.5,
+	RANDOMMISSING=F,
+	NOMISSING=F,
+	FITMODELS=T,
+	PLOTS=NA,
+	PLOTSDIR=getwd(),
+	PLOTNAMES='')
+	{
+
+#NTIPS= number of tips in the tree
+#ADJUSTNTIPS= if true, ntips given is final n after dropping so initial n is calculated to that effect.
+	#if false, ntips is initial n tips
+#PMISSING= probability/proportion of missing tips to be simulated. Used as a quantile to define threshold
+	#in continuous trait that underlies missing tips
+#GENMODEL=generating model for the 'interest' trait
+#RAMDOMMISSING: set to T to run a simulation with random missing tips (no phylo signal)
+	#Note that % of missing tips in this case will still be given by MEANRARITY
+#NOMISSING: set to F to run a simulation with no missing tips. In this case MEANRARITY has no effect.
+#FITMODELS: set to F if i want to just simulate missing data and not fit models to interest
+#PLOTS: produce plots or not
+	
+library(ape)
+library(phytools)
+library(OUwie)
+library(dplyr)
+library(tibble)
+library(geiger)
+library(caper)
+library(castor)
+library(plotrix)
+
+initialntips=round(NTIPS/(1-PMISSING))
+if (ADJUSTNTIPS==F){initialntips=NTIPS}
+if (NOMISSING==T){initialntips=NTIPS}
+
+proceed=F
+while(proceed==F){
+
+basetr=rphylo(n=initialntips,birth=1,death=0) #generate random tree
+basetr=geiger::rescale(x=basetr,model='depth',depth=1)#rescale tree to have depth=1
+
+
+tipdata=as.data.frame(matrix(nrow=initialntips,ncol=2)) #matrix where i'll store tip data
+tipdata[,1]=basetr$tip.label
+colnames(tipdata)=c('tip', 'regime')
+
+Q=matrix(nrow=2,ncol=2,data=c(-0.5,0.5,0.5,-0.5))
+regimes=simulate_mk_model(tree=basetr,Q=Q,root_probabilities=c(1,0))
+regimes$tip_states=as.character(regimes$tip_states)
+regimes$tip_states=gsub(x=regimes$tip_states,pattern='1',replacement='regime1')
+regimes$tip_states=gsub(x=regimes$tip_states,pattern='2',replacement='regime2')
+regimes$node_states=gsub(x=regimes$node_states,pattern='1',replacement='regime1')
+regimes$node_states=gsub(x=regimes$node_states,pattern='2',replacement='regime2')
+sizereg1=length(grep(pattern='regime1',x=regimes$tip_states,value=T))
+sizereg2=length(grep(pattern='regime2',x=regimes$tip_states,value=T))
+tipdata$regime=regimes$tip_states
+basetr$node.label=regimes$node_states
+
+
+#simulate underlying continuous trait (liability)
+L=OUwie.sim(phy=basetr,data=tipdata,alpha=c(0,0),sigma.sq=c(1,1),theta0=0,theta=c(0,0))
+thresh=quantile(x=L[,3],probs=PMISSING) #find threshold
+L[,2]=NULL
+tipdata=merge(tipdata,L,by=1)
+colnames(tipdata)[3]='Liability'
+
+tipdata[,4]=rep(x=NA, times=nrow(tipdata))
+colnames(tipdata)[4]='missing'
+
+#simulate missing data
+if (RANDOMMISSING==F){
+if (NOMISSING==F){
+for (t in 1:nrow(tipdata)){
+	if (tipdata[t,3]>=thresh){tipdata[t,4]='sampled'}
+	if (tipdata[t,3]<thresh){tipdata[t,4]='missing'}
+}}}
+
+
+if (RANDOMMISSING==T){ #if i want to run a simulation of random missing tips (no phylogenetic signal to them)
+tipdata[,'missing']=sample(x=c('missing','sampled'),size=nrow(tipdata),replace=T,prob=c(PMISSING,1-PMISSING))
+}
+	
+if (NOMISSING==T){ #if i want to run a simulation without missing tips
+tipdata[,'missing']=rep(x='sampled',times=nrow(tipdata))
+}
+
+
+		
+#check size of the smallest regime after dropping
+reg1=filter(.data=tipdata,missing=='sampled',regime=='regime1')
+reg2=filter(.data=tipdata,missing=='sampled',regime=='regime2')
+smallregime=reg2
+if(nrow(reg1)<nrow(reg2)){smallregime=reg1}
+secreg=nrow(smallregime)/NTIPS
+cat('Small regime has',secreg,'of tips\n')
+if ((secreg)<(SMALLREGIME+0.1)){
+	if ((secreg)>(SMALLREGIME-0.1)){
+		proceed=T}}
+
+
+}#end of while loop
+
+cat('PROCEEDING...')
+
+#simulate trait of interest (the one that i'll simulate under various models)
+if (GENMODEL=='BM'){
+	alpha=c(0,0)
+	sigma.sq=c(SIGMA0,SIGMA0)
+	theta=c(THETA0,THETA0)
+}
+
+if (GENMODEL=='BMS'){
+	alpha=c(0,0)
+	sigma.sq=c(SIGMA0,SIGMA1)
+	theta=c(THETA0,THETA0)
+}
+
+if (GENMODEL=='OU'){
+	alpha=c(ALPHA,ALPHA)
+	sigma.sq=c(SIGMA0,SIGMA0)
+	theta=c(THETA0,THETA0)
+}
+
+
+if (GENMODEL=='OUM'){
+	alpha=c(ALPHA,ALPHA)
+	sigma.sq=c(SIGMA0,SIGMA0)
+	theta=c(THETA0,THETA1)
+}
+
+interest=OUwie.sim(phy=basetr,
+				data=tipdata[,1:2],
+				alpha=alpha,
+				sigma.sq=sigma.sq,
+				theta0=0,
+				theta=theta
+				)
+
+interest=interest[,c(1,3)]
+tipdata=merge(tipdata,interest,by=1)
+colnames(tipdata)[5]='interest'
+
+
+DD=NA
+Dpval1=NA
+Dpval0=NA
+
+if(NOMISSING==F){
+dtree=basetr
+dtree$node.label=NULL
+D=phylo.d(data=tipdata, #calculate D, the phylogenetic signal in missing data
+					phy=dtree,
+					names.col=tip,
+					binvar=missing,
+					permut=1
+					)
+DD=D$DEstimate
+Dpval1=D$Pval1
+Dpval0=D$Pval0
+}
+
+missdata=filter(.data=tipdata,missing=='missing') #dataframe of data for missing tips
+
+nmissing=nrow(missdata)
+
+misstr=drop.tip(phy=basetr,tip=missdata$tip) #drop missing tips from tree
+
+#fit ouwie models to interest
+ouwie_input=filter(.data=tipdata,missing=='sampled')
+ouwie_input[,3]=ouwie_input[,5]
+ouwie_input=ouwie_input[,1:3]
+
+BMfit=NULL
+BMSfit=NULL
+OUfit=NULL
+OUMfit=NULL
+
+if(FITMODELS==T){
+
+BMfit=OUwie(phy=misstr,
+						data=ouwie_input,
+						model='BM1',
+						quiet=F)
+
+BMSfit=OUwie(phy=misstr,
+						data=ouwie_input,
+						model='BMS',
+						quiet=F)
+
+OUfit=OUwie(phy=misstr,
+						data=ouwie_input,
+						model='OU1',
+						quiet=F)
+
+OUMfit=OUwie(phy=misstr,
+						data=ouwie_input,
+						model='OUM',
+						quiet=F)
+}
+
+if(GENMODEL=='BM'){estim=BMfit}
+if(GENMODEL=='BMS'){estim=BMSfit}
+if(GENMODEL=='OU'){estim=OUfit}
+if(GENMODEL=='OUM'){estim=OUMfit}
+
+rownames(estim$theta)=colnames(estim$solution)
+
+
+
+res=list(RANDOMMISSING,NOMISSING,length(basetr$tip.label),length(misstr$tip.label),
+				 ADJUSTNTIPS,PMISSING,DD,basetr,misstr,tipdata,secreg,
+				 BMfit$AICc,BMSfit$AICc,OUfit$AICc,OUMfit$AICc,GENMODEL,
+				 ALPHA,estim$solution[1,1],SIGMA0,estim$solution[2,1],
+				 SIGMA1,estim$solution[2,2],
+				 THETA0,estim$theta[1,1],
+				 THETA1,estim$theta[2,1])
+
+
+names(res)=c('Randommissing','Nomissing','Initialntips','Finalntips',
+						 'Adjustntips','pmissing', 'D','Base_tree','Pruned_tree','tipdata','secreg',
+						 'BM_AICc','BMS_AICc','OU_AICc','OUM_AICc','Generating_model',
+						 'alpha','alpha.est','sigma0','sigma0.est','sigma1','sigma1.est',
+						 'theta0','theta0.est','theta1','theta1.est')
+
+if(GENMODEL=='BM'){res[c(17:18,21:26)]=rep(x=NA,times=8)}
+if(GENMODEL=='BMS'){res[c(17:18,23:26)]=rep(x=NA,times=6)}
+if(GENMODEL=='OU'){res[c(21,22,25,26)]=rep(x=NA,times=4)}
+if(GENMODEL=='OUM'){res[c(21,22)]=rep(x=NA,times=2)}
+			
+
+setwd(PLOTSDIR)
+
+if (length(grep(pattern='tree',x=PLOTS))>0){ #plot trees
+#plot basetr interest and missing together
+fname=paste0('tree_',PLOTNAMES,'.pdf')
+pdf(fname)
+plot(basetr,show.tip.label=F,type='fan')
+misstips=gsub(x=filter(.data=tipdata,missing=='missing')$tip,pattern='t',replacement='') #get indices of missing tips
+tiplabels(tip=as.numeric(misstips),pch=19,col='black',cex=0.5,offset=0.03) #symbol on missing tips
+tipcolors=tipdata[,5]
+names(tipcolors)=tipdata[,1]
+tipcolors=sort(tipcolors)
+tips=as.numeric(gsub(x=names(tipcolors),pattern='t',replacement=''))
+tipcolors=rev(rainbow(length(tipcolors),start=0,end=3/6))
+tiplabels(tip=tips,col=tipcolors,pch=19,cex=0.5)
+color.legend(xl=0.95,yb=0.8,xr=1,yt=1,legend=round(c(min(tipdata$interest),max(tipdata$interest)),2),
+						 rect.col=tipcolors,
+						 gradient='y',align='rb',cex=0.75)
+text(x=1.1,y=0.9,labels='Trait\nvalue',cex=0.75)
+points(x=0.975,y=0.65,type='p',pch=19,cex=0.5)
+text(x=1.1,y=0.65,labels='Missing\ntip',cex=0.75)
+mtext(side=1,text='Random missing data',cex=1.25)
+dev.off()
+
+fname=paste0('regime_',PLOTNAMES,'.pdf')
+pdf(fname)
+plot(basetr,cex=0.2,type='fan')
+tipcols=tipdata[,1:2]
+tipcols$tip=as.numeric(gsub(x=tipcols$tip,pattern='t',replacement=''))
+tipcols=tipcols[order(tipcols$tip),]
+tipcols=tipcols$regime
+tipcols=gsub(x=tipcols,pattern='regime1',replacement='red')
+tipcols=gsub(x=tipcols,pattern='regime2',replacement='blue')
+nodecols=as.character(basetr$node.label)
+nodecols=gsub(x=nodecols,pattern='regime1',replacement='red')
+nodecols=gsub(x=nodecols,pattern='regime2',replacement='blue')
+nodelabels(col=nodecols,pch=19,cex=0.75)
+tiplabels(col=tipcols,pch=19,offset=0,cex=0.75)
+dev.off()
+}
+
+
+
+if (length(grep(pattern='interestpre',x=PLOTS))>0){ #histogram of interest prior to dropping tips
+fname=paste0('interest_pre',PLOTNAMES,'.pdf')
+pdf(file=fname)
+hist(tipdata[,'interest'])
+dev.off()
+}
+
+if (length(grep(pattern='interestpost',x=PLOTS))>0){ #histogram of interest post dropping tips
+fname=paste0('interest_post',PLOTNAMES,'.pdf')
+pdf(file=fname)
+hist(filter(.data=tipdata,missing=='sampled')[,'interest'])
+dev.off()
+}
+
+
+if (length(grep(pattern='regime',x=PLOTS))>0){
+fname=paste0('regime',PLOTNAMES,'.pdf')
+pdf(file=fname)
+plot(basetr,cex=0.2)
+tipcols=tipdata[,1:2]
+tipcols$tip=as.numeric(gsub(x=tipcols$tip,pattern='t',replacement=''))
+tipcols=tipcols[order(tipcols$tip),]
+tipcols=tipcols$regime
+tipcols=gsub(x=tipcols,pattern='regime1',replacement='red')
+tipcols=gsub(x=tipcols,pattern='regime2',replacement='blue')
+nodecols=as.character(basetr$node.label)
+nodecols=gsub(x=nodecols,pattern='regime1',replacement='red')
+nodecols=gsub(x=nodecols,pattern='regime2',replacement='blue')
+nodelabels(col=nodecols,pch=19,cex=0.75)
+tiplabels(col=tipcols,pch=19,offset=0,cex=0.75)
+dev.off()
+}
+
+return(res)
+
+}
+
+##################################################################################################################################
+##################################################################################################################################
+summarizemissdatasims=function(DIR=getwd()){
+
+#DIR=getwd()
+library(dplyr)
+files=list.files(path=DIR, pattern='.rds',full.names = T)
+files=sort(x=files,decreasing=T)
+
+res=as.data.frame(matrix(nrow=0,ncol=23))
+bla=readRDS(files[1])
+colnames(res)=names(bla)[c(1:7,11:26)]
+res[1,]=bla[c(1:7,11:26)]
+	
+for (f in 2:length(files)){
+bla=readRDS(files[f])
+res[f,]=bla[c(1:7,11:26)]
+cat('Processing sim ', nrow(res), 'of', length(files),'\n')
+cat(files[f],'\n')
+}
+
+for (r in 1:nrow(res)){
+	aicvec=res[r,9:12]
+	aicvec=aicvec-min(aicvec)
+	res[r,9:12]=aicvec
+}
+
+return(res)
+}
+
+
+
+
+
+
+
