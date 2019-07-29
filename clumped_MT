@@ -3,9 +3,8 @@
 #######in phylogenetic comparative methods and their effects on model selection and parameter estimation", 
 #######submitted to PeerJ on June 2019.
 
-#######I freely admit that my scripts are poorly-annotated, clunky, innefficient and just plain ugly. If 
-#######nevertheless you are a brave soul and will dare to try to understand and re-use them, please feel free to 
-#######contact me at raf.marcondes@gmail.com if you need help.
+#######If you need help understanding or re-using my scripts, please feel free to email
+####### me at raf.marcondes@gmail.com
 
 #######If you adapt ot re-use any of my scripts, please consider citing this repository or the PeerJ 
 #######manuscript in any resulting publications.
@@ -16,41 +15,29 @@
 
 #######Louisiana State University
 
-#######June 2019
+#######July 2019
 
 
 ##################################################################################################################################
-missing_data_function=function(
-	NTIPS,
-	ADJUSTNTIPS=T,
-	PMISSING,
-	GENMODEL,
-	SMALLREGIME=0.35,
-	THETA0=0,
-	THETA1=1,
-	SIGMA0=0.5,
-	SIGMA1=1,
-	ALPHA=1.5,
-	RANDOMMISSING=F,
-	NOMISSING=F,
-	FITMODELS=T,
-	PLOTS=NA,
-	PLOTSDIR=getwd(),
-	PLOTNAMES='')
+clumped_MT=function(
+	NTIPS=300, 
+	ADJUSTNTIPS=T, #if TRUE  initial number of tips will be adjusted so that it will be constant AFTER pruning missing taxa
+	PMISSING=0.5, #desired proportion of missing taxa to simulate
+	GENMODEL='OUM',  #generating model of trait of interest (character: BM  BMS  OU or OUM)
+	SMALLREGIME=0.35,  #acceptable proportion of tips in the minor regime for BMS or OUM models (this number + or - 0.1)
+	THETA0=10,  #parameters to use to simulate T
+	THETA1=11, 
+	SIGMA0=0.5, 
+	SIGMA1=1, 
+	ALPHA=1.5, 
+	RANDOMMISSING=F, #if TRUE  simulates phylogenetically random missing taxa
+	NOMISSING=F,  #if TRUE  runs a simulation with no missing taxa
+	FITMODELS=T, #whether or not to fit all models to the data  after data has been simulted
+	PLOTS=NA,  #whether or not to produce basic plots
+	PLOTSDIR=getwd(),  #where to save plots
+	PLOTNAMES='') #base name for plot files
 	{
 
-#NTIPS= number of tips in the tree
-#ADJUSTNTIPS= if true, ntips given is final n after dropping so initial n is calculated to that effect.
-	#if false, ntips is initial n tips
-#PMISSING= probability/proportion of missing tips to be simulated. Used as a quantile to define threshold
-	#in continuous trait that underlies missing tips
-#GENMODEL=generating model for the 'interest' trait
-#RAMDOMMISSING: set to T to run a simulation with random missing tips (no phylo signal)
-	#Note that % of missing tips in this case will still be given by MEANRARITY
-#NOMISSING: set to F to run a simulation with no missing tips. In this case MEANRARITY has no effect.
-#FITMODELS: set to F if i want to just simulate missing data and not fit models to interest
-#PLOTS: produce plots or not
-	
 library(ape)
 library(phytools)
 library(OUwie)
@@ -66,7 +53,7 @@ if (ADJUSTNTIPS==F){initialntips=NTIPS}
 if (NOMISSING==T){initialntips=NTIPS}
 
 proceed=F
-while(proceed==F){
+while(proceed==F){ #will only proceed when number of tips in minor regime is equal to SMALLREGIME+-0.1
 
 basetr=rphylo(n=initialntips,birth=1,death=0) #generate random tree
 basetr=geiger::rescale(x=basetr,model='depth',depth=1)#rescale tree to have depth=1
@@ -76,6 +63,7 @@ tipdata=as.data.frame(matrix(nrow=initialntips,ncol=2)) #matrix where i'll store
 tipdata[,1]=basetr$tip.label
 colnames(tipdata)=c('tip', 'regime')
 
+#simulate regimes (for OUM and BMS models)
 Q=matrix(nrow=2,ncol=2,data=c(-0.5,0.5,0.5,-0.5))
 regimes=simulate_mk_model(tree=basetr,Q=Q,root_probabilities=c(1,0))
 regimes$tip_states=as.character(regimes$tip_states)
@@ -117,7 +105,6 @@ tipdata[,'missing']=rep(x='sampled',times=nrow(tipdata))
 }
 
 
-		
 #check size of the smallest regime after dropping
 reg1=filter(.data=tipdata,missing=='sampled',regime=='regime1')
 reg2=filter(.data=tipdata,missing=='sampled',regime=='regime2')
@@ -128,7 +115,6 @@ cat('Small regime has',secreg,'of tips\n')
 if ((secreg)<(SMALLREGIME+0.1)){
 	if ((secreg)>(SMALLREGIME-0.1)){
 		proceed=T}}
-
 
 }#end of while loop
 
@@ -239,7 +225,7 @@ rownames(estim$theta)=colnames(estim$solution)
 
 
 
-res=list(RANDOMMISSING,NOMISSING,length(basetr$tip.label),length(misstr$tip.label),
+res=list(RANDOMMISSING,NOMISSING,length(basetr$tip.label),length(misstr$tip.label), #output of the function
 				 ADJUSTNTIPS,PMISSING,DD,basetr,misstr,tipdata,secreg,
 				 BMfit$AICc,BMSfit$AICc,OUfit$AICc,OUMfit$AICc,GENMODEL,
 				 ALPHA,estim$solution[1,1],SIGMA0,estim$solution[2,1],
@@ -259,7 +245,7 @@ if(GENMODEL=='BMS'){res[c(17:18,23:26)]=rep(x=NA,times=6)}
 if(GENMODEL=='OU'){res[c(21,22,25,26)]=rep(x=NA,times=4)}
 if(GENMODEL=='OUM'){res[c(21,22)]=rep(x=NA,times=2)}
 			
-
+#plots
 setwd(PLOTSDIR)
 
 if (length(grep(pattern='tree',x=PLOTS))>0){ #plot trees
@@ -301,8 +287,6 @@ tiplabels(col=tipcols,pch=19,offset=0,cex=0.75)
 dev.off()
 }
 
-
-
 if (length(grep(pattern='interestpre',x=PLOTS))>0){ #histogram of interest prior to dropping tips
 fname=paste0('interest_pre',PLOTNAMES,'.pdf')
 pdf(file=fname)
@@ -342,7 +326,7 @@ return(res)
 
 ##################################################################################################################################
 ##################################################################################################################################
-summarizemissdatasims=function(DIR=getwd()){
+summarizemissdatasims=function(DIR=getwd()){ #function to process output of multiple runs of clumped_MT and summarize them in a dataframe
 
 #DIR=getwd()
 library(dplyr)
@@ -369,9 +353,6 @@ for (r in 1:nrow(res)){
 
 return(res)
 }
-
-
-
 
 
 
