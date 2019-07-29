@@ -4,9 +4,8 @@
 #######in phylogenetic comparative methods and their effects on model selection and parameter estimation", 
 #######submitted to PeerJ on June 2019.
 
-#######I freely admit that my scripts are poorly-annotated, clunky, innefficient and just plain ugly. If 
-#######nevertheless you are a brave soul and will dare to try to understand and re-use them, please feel free to 
-#######contact me at raf.marcondes@gmail.com if you need help.
+#######If you need help understanding or re-using my scripts, please feel free to email
+####### me at raf.marcondes@gmail.com
 
 #######If you adapt or re-use any of my scripts, please consider citing my PeerJ 
 #######manuscript in any resulting publications.
@@ -17,87 +16,223 @@
 
 #######Louisiana State University
 
-#######June 2019
+#######July 2019
 
 nsim=3 #NUMBER OF SIMULATIONS TO RUN
 
 myfunction=function(dummy){
-#function that in each iterartion runs BM, OU and OUM for 10%, 50% and 90% phylo miss data
+#function that in each iterartion runs BM, OU and OUM for 10%, 50% and 90% clumped, correlated and random miss data, and also 0% missing data
 ntips=15 #NUMBER OF TIPS IN SIMULATED TREES	
-
 
 source('/Users/Rafael/Dropbox/data_and_scripts/missdata/correlated_MT.R')
 source('/Users/Rafael/Dropbox/data_and_scripts/missdata/clumped_MT.R')
 
 
-##########################10% phylo missing data#########################
+##########################10% clumped missing data#########################
 pmissing=0.1
 
-bla=missing_data_function(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'BM',NOMISSING=F)
+bla=clumped_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'BM',NOMISSING=F)
 fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
 saveRDS(object=bla,file=fname)
 
-bla=missing_data_function(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'OU')
+bla=clumped_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'OU')
 fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
 saveRDS(object=bla,file=fname)
 
-bla=missing_data_function(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'OUM')
+bla=clumped_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'OUM')
 fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
 saveRDS(object=bla,file=fname)
 
-bla=missing_data_function(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'BMS')
+bla=clumped_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'BMS')
 fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
 saveRDS(object=bla,file=fname)
 
-##########################50% phylo missing data#########################
+##########################50% clumped missing data#########################
 pmissing=0.5
 
-bla=missing_data_function(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'BM',NOMISSING=F)
+bla=clumped_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'BM',NOMISSING=F)
 fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
 saveRDS(object=bla,file=fname)
 
-bla=missing_data_function(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'OU')
+bla=clumped_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'OU')
 fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
 saveRDS(object=bla,file=fname)
 
-bla=missing_data_function(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'OUM')
+bla=clumped_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'OUM')
 fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
 saveRDS(object=bla,file=fname)
 
-bla=missing_data_function(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'BMS')
+bla=clumped_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'BMS')
 fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
 saveRDS(object=bla,file=fname)
 
-##########################90% phylo missing data#########################
+##########################90% clumped missing data#########################
 pmissing=0.9
 
-bla=missing_data_function(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'BM',NOMISSING=F)
+bla=clumped_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'BM',NOMISSING=F)
 fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
 saveRDS(object=bla,file=fname)
 
-bla=missing_data_function(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'OU')
+bla=clumped_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'OU')
 fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
 saveRDS(object=bla,file=fname)
 
-bla=missing_data_function(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'OUM')
+bla=clumped_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'OUM')
 fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
 saveRDS(object=bla,file=fname)
 
-bla=missing_data_function(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'BMS')
+bla=clumped_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'BMS')
 fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
 saveRDS(object=bla,file=fname)
+
+
+
+
+##########################10% correlated missing data#########################
+pmissing=0.1
+
+bla=correlated_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'BM',NOMISSING=F)
+fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
+saveRDS(object=bla,file=fname)
+
+bla=correlated_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'OU')
+fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
+saveRDS(object=bla,file=fname)
+
+bla=correlated_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'OUM')
+fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
+saveRDS(object=bla,file=fname)
+
+bla=correlated_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'BMS')
+fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
+saveRDS(object=bla,file=fname)
+
+##########################50% correlated missing data#########################
+pmissing=0.5
+
+bla=correlated_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'BM',NOMISSING=F)
+fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
+saveRDS(object=bla,file=fname)
+
+bla=correlated_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'OU')
+fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
+saveRDS(object=bla,file=fname)
+
+bla=correlated_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'OUM')
+fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
+saveRDS(object=bla,file=fname)
+
+bla=correlated_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'BMS')
+fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
+saveRDS(object=bla,file=fname)
+
+##########################90% correlated missing data#########################
+pmissing=0.9
+
+bla=correlated_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'BM',NOMISSING=F)
+fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
+saveRDS(object=bla,file=fname)
+
+bla=correlated_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'OU')
+fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
+saveRDS(object=bla,file=fname)
+
+bla=correlated_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'OUM')
+fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
+saveRDS(object=bla,file=fname)
+
+bla=correlated_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'BMS')
+fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
+saveRDS(object=bla,file=fname)
+
+
+
+
+##########################10% random missing data#########################
+pmissing=0.1
+
+bla=clumped_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'BM',NOMISSING=F,RANDOMMISSING=T)
+fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
+saveRDS(object=bla,file=fname)
+
+bla=clumped_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'OU',RANDOMMISSING=T)
+fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
+saveRDS(object=bla,file=fname)
+
+bla=clumped_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'OUM',RANDOMMISSING=T)
+fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
+saveRDS(object=bla,file=fname)
+
+bla=clumped_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'BMS',RANDOMMISSING=T)
+fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
+saveRDS(object=bla,file=fname)
+
+##########################50% clumped missing data#########################
+pmissing=0.5
+
+bla=clumped_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'BM',NOMISSING=F,RANDOMMISSING=T)
+fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
+saveRDS(object=bla,file=fname)
+
+bla=clumped_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'OU',RANDOMMISSING=T)
+fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
+saveRDS(object=bla,file=fname)
+
+bla=clumped_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'OUM',RANDOMMISSING=T)
+fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
+saveRDS(object=bla,file=fname)
+
+bla=clumped_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'BMS',RANDOMMISSING=T)
+fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
+saveRDS(object=bla,file=fname)
+
+##########################90% clumped missing data#########################
+pmissing=0.9
+
+bla=clumped_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'BM',NOMISSING=F,RANDOMMISSING=T)
+fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
+saveRDS(object=bla,file=fname)
+
+bla=clumped_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'OU',RANDOMMISSING=T)
+fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
+saveRDS(object=bla,file=fname)
+
+bla=clumped_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'OUM',RANDOMMISSING=T)
+fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
+saveRDS(object=bla,file=fname)
+
+bla=clumped_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'BMS',RANDOMMISSING=T)
+fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
+saveRDS(object=bla,file=fname)
+
+
+##########################no missing data#########################
+
+
+bla=clumped_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'BM',NOMISSING=T)
+fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
+saveRDS(object=bla,file=fname)
+
+bla=clumped_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'OU',NOMISSING=T)
+fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
+saveRDS(object=bla,file=fname)
+
+bla=clumped_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'OUM',NOMISSING=T)
+fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
+saveRDS(object=bla,file=fname)
+
+bla=clumped_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'BMS',NOMISSING=T)
+fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
+saveRDS(object=bla,file=fname)
+
 
 } #end of myfunction
 
 input=runif(n=nsim,min=0,max=5758)
 
-library(parallel)
+library(parallel) #run simulations in parallel
 mycl=makeCluster(1)
 parLapply(X=input,fun=myfunction,cl=mycl)
 stopCluster(mycl)
 cat(date(),'\n')
-
-
-
-
 
