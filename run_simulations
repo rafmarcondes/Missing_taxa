@@ -167,7 +167,7 @@ bla=clumped_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'BMS',RANDOMMISSING=T)
 fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
 saveRDS(object=bla,file=fname)
 
-##########################50% clumped missing data#########################
+##########################50% random missing data#########################
 pmissing=0.5
 
 bla=clumped_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'BM',NOMISSING=F,RANDOMMISSING=T)
@@ -186,7 +186,7 @@ bla=clumped_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'BMS',RANDOMMISSING=T)
 fname=paste0('simulation',as.character(round(runif(n=1,min=0,max=10000000))),'.rds')
 saveRDS(object=bla,file=fname)
 
-##########################90% clumped missing data#########################
+##########################90% random missing data#########################
 pmissing=0.9
 
 bla=clumped_MT(NTIPS=ntips,PMISSING = pmissing,GENMODEL = 'BM',NOMISSING=F,RANDOMMISSING=T)
