@@ -2,11 +2,7 @@
 #######comparative datasets, as described in a manuscript entitled "Realistic scenarios of missing taxa###
 #######in phylogenetic comparative methods and their effects on model selection and parameter estimation", 
 #######submitted to PeerJ on June 2019.
-### This script also generates Figure 3 and Tables 2 and 3 of the aforementioned manuscript
-
-#######I freely admit that my scripts are poorly-annotated, clunky, innefficient and just plain ugly. If 
-#######nevertheless you are a brave soul and will dare to try to understand and re-use them, please feel free to 
-#######contact me at raf.marcondes@gmail.com if you need help.
+### This script also generates Figure 3 and Tables 2-5 of the aforementioned manuscript
 
 #######If you adapt ot re-use any of my scripts, please consider citing my the PeerJ 
 #######manuscript in any resulting publications.
@@ -17,7 +13,7 @@
 
 #######Louisiana State University
 
-#######June 2019
+#######July 2019
 
 source('/Users/Rafael/Dropbox/data_and_scripts/missdata/correlated_MT.R')
 source('/Users/Rafael/Dropbox/data_and_scripts/missdata/clumped_MT.R')
@@ -313,13 +309,22 @@ theta0=filter(.data=corr,Generating_model=='OUM')[1,21]
 theta1=filter(.data=corr,Generating_model=='OUM')[1,23]
 
 
-###########FIGURE 3##############
 library(beeswarm)
 options(scipen=99999)
-pdf(file='fig3_revised_06jun2019.pdf',height=23.38,width=16.54)
+pdf(file='fig3_revised_29jul2019.pdf',height=23.38,width=16.54)
 par(cex.axis=2,mar=c(2,4,2,2))
 layout(mat=matrix(nrow=10,ncol=1,data=1:10,byrow=T))
-#PANEL 1 - SIGMA0 BM
+
+biastable=matrix(ncol=10,nrow=10)
+colnames(biastable)=c('nMT','10% rMT','50% rMT','90% rMT',
+				 				 '10% cluMT','50% cluMT', '90% cluMT',
+				 				 '10% corMT','50% corMT', '90% corMT')
+rownames(biastable)=c('sigma0.BM','sigma0.BMS','sigma1.BMS','sigma0.OU','theta0.OU',
+											'alpha.OU','sigma0.OUM','theta0.OUM','theta1.OUM','alpha.OUM')
+											
+prectable=biastable
+
+####PANEL 1 - SIGMA0 BM#####
 params_by_model=list()
 for (p in c('no.missing','ten.rand','fifty.rand','ninety.rand',
 												'ten.phy','fifty.phy', 'ninety.phy',
@@ -328,7 +333,7 @@ for (p in c('no.missing','ten.rand','fifty.rand','ninety.rand',
 dat=get(p)
 dat=filter(dat,Generating_model=='BM')
 dat=dat$sigma0.est
-#REMOVE TWO OUTLIERS AT EXTREMES OF DISTRIBUTIOMN FOR NICER PLOTS
+#REMOVE A FEW OUTLIERS AT EXTREMES OF DISTRIBUTIOMN FOR NICER PLOTS
 dat=sort(dat)[6:996]
 #hist(dat,main=p)
 params_by_model[[length(params_by_model)+1]]=dat
@@ -350,49 +355,14 @@ for (m in params_by_model){
 }
 bias=unlist(bias)/sigma0
 prec=unlist(prec)/sigma0
-bias=round(bias,4)
-prec=round(prec,4)
+biastable[1,]=round(bias,4)
+prectable[1,]=round(prec,4)
 lines(x=c(-100,100),y=c(sigma0,sigma0),lty=2)
-text(labels=prec,y=0.6,x=seq(from=0.55,by=1,length=10),cex=1.75)
-text(labels=bias,y=0.55,x=seq(from=0.55,by=1,length=10),cex=1.75)
 text(x=10.5,y=0.6,labels=expression(paste(sigma^2,''['0'],' BM')),cex=2.5)
-#PANEL 2 - SIGMA0 OU
-params_by_model=list()
-for (p in c('no.missing','ten.rand','fifty.rand','ninety.rand',
-												'ten.phy','fifty.phy', 'ninety.phy',
-												'ten.corr','fifty.corr','ninety.corr')){
-#filename=paste0(p,'_param_hists.pdf')
-dat=get(p)
-dat=filter(dat,Generating_model=='OU')
-dat=dat$sigma0.est
-#REMOVE TWO OUTLIERS AT EXTREMES OF DISTRIBUTIOMN FOR NICER PLOTS
-dat=sort(dat)[6:996]
-#hist(dat,main=p)
-params_by_model[[length(params_by_model)+1]]=dat
-names(params_by_model)[length(params_by_model)]=p
-}
-beeswarm(params_by_model,
-				 corral='random',
-				 cex=0.35,
-				 col='darkgrey',
-				 ylim=c(0.35,0.7),
-				 				 pch=19,
-				 labels='')
-prec=list()
-bias=list()
-for (m in params_by_model){
-	prec[length(prec)+1]=round(mad(m),3)
-	bias[length(bias)+1]=round(mean(m)-sigma0,3)
-}
-bias=unlist(bias)/sigma0
-bias=round(bias,4)
-prec=unlist(prec)/sigma0
-prec=round(prec,4)
-text(labels=prec,y=0.6,x=seq(from=0.55,by=1,length=10),cex=1.75)
-text(labels=bias,y=0.55,x=seq(from=0.55,by=1,length=10),cex=1.75)
-lines(x=c(-100,100),y=c(sigma0,sigma0),lty=2)
-text(x=10.5,y=0.6,labels=expression(paste(sigma^2,''['0'],' OU')),cex=2.5)
-#PANEL 3 - SIGMA0 BMS
+text(x=0.3,y=0.62,labels='A',cex=4)
+
+
+####PANEL 2 - SIGMA0 BMS####
 params_by_model=list()
 for (p in c('no.missing','ten.rand','fifty.rand','ninety.rand',
 												'ten.phy','fifty.phy', 'ninety.phy',
@@ -421,50 +391,15 @@ for (m in params_by_model){
 	bias[length(bias)+1]=round(mean(m)-sigma0,3)
 }
 bias=unlist(bias)/sigma0
-bias=round(bias,4)
+biastable[2,]=round(bias,4)
 prec=unlist(prec)/sigma0
-prec=round(prec,4)
-text(labels=prec,y=0.6,x=seq(from=0.55,by=1,length=10),cex=1.75)
-text(labels=bias,y=0.55,x=seq(from=0.55,by=1,length=10),cex=1.75)
+prectable[2,]=round(prec,4)
+
 lines(x=c(-100,100),y=c(sigma0,sigma0),lty=2)
 text(x=10.5,y=0.6,labels=expression(paste(sigma^2,''['0'],' BMS')),cex=2.5)
-#PANEL 4 - SIGMA0 OUM
-params_by_model=list()
-for (p in c('no.missing','ten.rand','fifty.rand','ninety.rand',
-												'ten.phy','fifty.phy', 'ninety.phy',
-												'ten.corr','fifty.corr','ninety.corr')){
-#filename=paste0(p,'_param_hists.pdf')
-dat=get(p)
-dat=filter(dat,Generating_model=='OUM')
-dat=dat$sigma0.est
-#REMOVE TWO OUTLIERS AT EXTREMES OF DISTRIBUTIOMN FOR NICER PLOTS
-dat=sort(dat)[6:996]
-#hist(dat,main=p)
-params_by_model[[length(params_by_model)+1]]=dat
-names(params_by_model)[length(params_by_model)]=p
-}
-beeswarm(params_by_model,
-				 corral='random',
-				 cex=0.35,
-				 col='darkgrey',
-				 ylim=c(0.35,0.7),
-				 				 pch=19,
-				 				 labels='')
-prec=list()
-bias=list()
-for (m in params_by_model){
-	prec[length(prec)+1]=round(mad(m),3)
-	bias[length(bias)+1]=round(mean(m)-sigma0,3)
-}
-bias=unlist(bias)/sigma0
-bias=round(bias,4)
-prec=unlist(prec)/sigma0
-prec=round(prec,4)
-text(labels=prec,y=0.6,x=seq(from=0.55,by=1,length=10),cex=1.75)
-text(labels=bias,y=0.55,x=seq(from=0.55,by=1,length=10),cex=1.75)
-lines(x=c(-100,100),y=c(sigma0,sigma0),lty=2)
-text(x=10.5,y=0.6,labels=expression(paste(sigma^2,''['0'],' OUM')),cex=2.5)
-#PANEL X - SIGMA1 BMS
+text(x=0.3,y=0.62,labels='B',cex=4)
+
+#####PANEL 3 - SIGMA1 BMS#####
 params_by_model=list()
 for (p in c('no.missing','ten.rand','fifty.rand','ninety.rand',
 												'ten.phy','fifty.phy', 'ninety.phy',
@@ -493,14 +428,15 @@ for (m in params_by_model){
 	bias[length(bias)+1]=round(mean(m)-sigma1,3)
 }
 bias=unlist(bias)/sigma1
-bias=round(bias,4)
+biastable[3,]=round(bias,4)
 prec=unlist(prec)/sigma1
-prec=round(prec,4)
-text(labels=prec,y=1.15,x=seq(from=0.55,by=1,length=10),cex=1.75)
-text(labels=bias,y=1.05,x=seq(from=0.55,by=1,length=10),cex=1.75)
+prectable[3,]=round(prec,4)
+
 lines(x=c(-100,100),y=c(sigma1,sigma1),lty=2)
 text(x=10.5,y=1.15,labels=expression(paste(sigma^2,''['1'],' BMS')),cex=2.5)
-#PANEL 5 - ALPHA OU
+text(x=0.3,y=1.24,labels='C',cex=4)
+
+####PANEL 4 - SIGMA0 OU####
 params_by_model=list()
 for (p in c('no.missing','ten.rand','fifty.rand','ninety.rand',
 												'ten.phy','fifty.phy', 'ninety.phy',
@@ -508,7 +444,7 @@ for (p in c('no.missing','ten.rand','fifty.rand','ninety.rand',
 #filename=paste0(p,'_param_hists.pdf')
 dat=get(p)
 dat=filter(dat,Generating_model=='OU')
-dat=dat$alpha.est
+dat=dat$sigma0.est
 #REMOVE TWO OUTLIERS AT EXTREMES OF DISTRIBUTIOMN FOR NICER PLOTS
 dat=sort(dat)[6:996]
 #hist(dat,main=p)
@@ -519,60 +455,25 @@ beeswarm(params_by_model,
 				 corral='random',
 				 cex=0.35,
 				 col='darkgrey',
-				 ylim=c(0.5,2.5),
+				 ylim=c(0.35,0.7),
 				 				 pch=19,
-				 				 labels='')
+				 labels='')
 prec=list()
 bias=list()
 for (m in params_by_model){
 	prec[length(prec)+1]=round(mad(m),3)
-	bias[length(bias)+1]=round(mean(m)-alpha,3)
+	bias[length(bias)+1]=round(mean(m)-sigma0,3)
 }
-bias=unlist(bias)/alpha
-bias=round(bias,4)
-prec=unlist(prec)/alpha
-prec=round(prec,4)
-text(labels=prec,y=2.1,x=seq(from=0.55,by=1,length=10),cex=1.75)
-text(labels=bias,y=1.8,x=seq(from=0.55,by=1,length=10),cex=1.75)
-lines(x=c(-100,100),y=c(alpha,alpha),lty=2)
-text(x=10.5,y=1.6,labels=expression(paste(alpha,' OU')),cex=2.5)
-#PANEL 6 - ALPHA OUM
-params_by_model=list()
-for (p in c('no.missing','ten.rand','fifty.rand','ninety.rand',
-												'ten.phy','fifty.phy', 'ninety.phy',
-												'ten.corr','fifty.corr','ninety.corr')){
-#filename=paste0(p,'_param_hists.pdf')
-dat=get(p)
-dat=filter(dat,Generating_model=='OUM')
-dat=dat$alpha.est
-#REMOVE TWO OUTLIERS AT EXTREMES OF DISTRIBUTIOMN FOR NICER PLOTS
-dat=sort(dat)[6:996]
-#hist(dat,main=p)
-params_by_model[[length(params_by_model)+1]]=dat
-names(params_by_model)[length(params_by_model)]=p
-}
-beeswarm(params_by_model,
-				 corral='random',
-				 cex=0.35,
-				 col='darkgrey',
-				 ylim=c(0.5,2.5),
-				 				 pch=19,
-				 				 labels='')
-prec=list()
-bias=list()
-for (m in params_by_model){
-	prec[length(prec)+1]=round(mad(m),3)
-	bias[length(bias)+1]=round(mean(m)-alpha,3)
-}
-bias=unlist(bias)/alpha
-bias=round(bias,4)
-prec=unlist(prec)/alpha
-prec=round(prec,4)
-text(labels=prec,y=2.1,x=seq(from=0.55,by=1,length=10),cex=1.75)
-text(labels=bias,y=1.8,x=seq(from=0.55,by=1,length=10),cex=1.75)
-lines(x=c(-100,100),y=c(alpha,alpha),lty=2)
-text(x=10.5,y=1.6,labels=expression(paste(alpha,' OUM')),cex=2.5)
-#PANEL 7 - THETA0 OU
+bias=unlist(bias)/sigma0
+biastable[4,]=round(bias,4)
+prec=unlist(prec)/sigma0
+prectable[4,]=round(prec,4)
+
+lines(x=c(-100,100),y=c(sigma0,sigma0),lty=2)
+text(x=10.5,y=0.6,labels=expression(paste(sigma^2,''['0'],' OU')),cex=2.5)
+text(x=0.3,y=0.62,labels='D',cex=4)
+
+####PANEL 5 - THETA0 OU####
 params_by_model=list()
 for (p in c('no.missing','ten.rand','fifty.rand','ninety.rand',
 												'ten.phy','fifty.phy', 'ninety.phy',
@@ -601,14 +502,89 @@ for (m in params_by_model){
 	bias[length(bias)+1]=round(mean(m)-theta0,3)
 }
 bias=unlist(bias)/theta0
-bias=round(bias,4)
+biastable[5,]=round(bias,4)
 prec=unlist(prec)/theta0
-prec=round(prec,4)
-text(labels=prec,y=10.2,x=seq(from=0.55,by=1,length=10),cex=1.75)
-text(labels=bias,y=10.1,x=seq(from=0.55,by=1,length=10),cex=1.75)
+prectable[5,]=round(prec,4)
+
 lines(x=c(-100,100),y=c(theta0,theta0),lty=2)
 text(x=10.5,y=10.15,labels=expression(paste(theta,''['0'],' OU')),cex=2.5)
-#PANEL 8 - THETA0 OUM
+text(x=0.3,y=10.2,labels='E',cex=4)
+
+#####PANEL 6 - ALPHA OU#####
+params_by_model=list()
+for (p in c('no.missing','ten.rand','fifty.rand','ninety.rand',
+												'ten.phy','fifty.phy', 'ninety.phy',
+												'ten.corr','fifty.corr','ninety.corr')){
+#filename=paste0(p,'_param_hists.pdf')
+dat=get(p)
+dat=filter(dat,Generating_model=='OU')
+dat=dat$alpha.est
+#REMOVE TWO OUTLIERS AT EXTREMES OF DISTRIBUTIOMN FOR NICER PLOTS
+dat=sort(dat)[6:996]
+#hist(dat,main=p)
+params_by_model[[length(params_by_model)+1]]=dat
+names(params_by_model)[length(params_by_model)]=p
+}
+beeswarm(params_by_model,
+				 corral='random',
+				 cex=0.35,
+				 col='darkgrey',
+				 ylim=c(0.5,2.5),
+				 				 pch=19,
+				 				 labels='')
+prec=list()
+bias=list()
+for (m in params_by_model){
+	prec[length(prec)+1]=round(mad(m),3)
+	bias[length(bias)+1]=round(mean(m)-alpha,3)
+}
+bias=unlist(bias)/alpha
+biastable[6,]=round(bias,4)
+prec=unlist(prec)/alpha
+prectable[6,]=round(prec,4)
+
+lines(x=c(-100,100),y=c(alpha,alpha),lty=2)
+text(x=10.5,y=1.6,labels=expression(paste(alpha,' OU')),cex=2.5)
+text(x=0.3,y=2.2,labels='F',cex=4)
+
+####PANEL 7 - SIGMA0 OUM#####
+params_by_model=list()
+for (p in c('no.missing','ten.rand','fifty.rand','ninety.rand',
+												'ten.phy','fifty.phy', 'ninety.phy',
+												'ten.corr','fifty.corr','ninety.corr')){
+#filename=paste0(p,'_param_hists.pdf')
+dat=get(p)
+dat=filter(dat,Generating_model=='OUM')
+dat=dat$sigma0.est
+#REMOVE TWO OUTLIERS AT EXTREMES OF DISTRIBUTIOMN FOR NICER PLOTS
+dat=sort(dat)[6:996]
+#hist(dat,main=p)
+params_by_model[[length(params_by_model)+1]]=dat
+names(params_by_model)[length(params_by_model)]=p
+}
+beeswarm(params_by_model,
+				 corral='random',
+				 cex=0.35,
+				 col='darkgrey',
+				 ylim=c(0.35,0.7),
+				 				 pch=19,
+				 				 labels='')
+prec=list()
+bias=list()
+for (m in params_by_model){
+	prec[length(prec)+1]=round(mad(m),3)
+	bias[length(bias)+1]=round(mean(m)-sigma0,3)
+}
+bias=unlist(bias)/sigma0
+biastable[7,]=round(bias,4)
+prec=unlist(prec)/sigma0
+prectable[7,]=round(prec,4)
+
+lines(x=c(-100,100),y=c(sigma0,sigma0),lty=2)
+text(x=10.5,y=0.6,labels=expression(paste(sigma^2,''['0'],' OUM')),cex=2.5)
+text(x=0.3,y=0.62,labels='G',cex=4)
+
+####PANEL 8 - THETA0 OUM####
 params_by_model=list()
 for (p in c('no.missing','ten.rand','fifty.rand','ninety.rand',
 												'ten.phy','fifty.phy', 'ninety.phy',
@@ -637,14 +613,15 @@ for (m in params_by_model){
 	bias[length(bias)+1]=round(mean(m)-theta0,3)
 }
 bias=unlist(bias)/theta0
-bias=round(bias,4)
+biastable[8,]=round(bias,4)
 prec=unlist(prec)/theta0
-prec=round(prec,4)
-text(labels=prec,y=10.2,x=seq(from=0.55,by=1,length=10),cex=1.75)
-text(labels=bias,y=10.1,x=seq(from=0.55,by=1,length=10),cex=1.75)
+prectable[8,]=round(prec,4)
+
 lines(x=c(-100,100),y=c(theta0,theta0),lty=2)
 text(x=10.5,y=10.15,labels=expression(paste(theta,''['0'],' OUM')),cex=2.5)
-#PANEL 8 - THETA1 OUM
+text(x=0.3,y=10.2,labels='H',cex=4)
+
+####PANEL 9 - THETA1 OUM####
 params_by_model=list()
 for (p in c('no.missing','ten.rand','fifty.rand','ninety.rand',
 												'ten.phy','fifty.phy', 'ninety.phy',
@@ -664,9 +641,7 @@ beeswarm(params_by_model,
 				 cex=0.35,
 				 col='darkgrey',
 				 #at=(1:length(params_by_model))/5,
-				 labels=c('nMT','10% rMT','50% rMT','90% rMT',
-				 				 '10% cluMT','50% cluMT', '90% cluMT',
-				 				 '10% corMT','50% corMT', '90% corMT'),
+					labels='',
 				 ylim=c(10,11.4),
 				 				 pch=19)
 prec=list()
@@ -676,12 +651,54 @@ for (m in params_by_model){
 	bias[length(bias)+1]=round(mean(m)-theta1,3)
 }
 bias=unlist(bias)/theta1
-bias=round(bias,4)
+biastable[9,]=round(bias,4)
 prec=unlist(prec)/theta1
-prec=round(prec,4)
-text(labels=prec,y=10.8,x=seq(from=0.55,by=1,length=10),cex=1.75)
-text(labels=bias,y=10.6,x=seq(from=0.55,by=1,length=10),cex=1.75)
+prectable[9,]=round(prec,4)
+
 lines(x=c(-100,100),y=c(theta1,theta1),lty=2)
 text(x=10.5,y=10.7,labels=expression(paste(theta['1'],' OUM')),cex=2.5)
+text(x=0.3,y=11.14,labels='I',cex=4)
+
+
+####PANEL 10 - ALPHA OUM####
+params_by_model=list()
+for (p in c('no.missing','ten.rand','fifty.rand','ninety.rand',
+												'ten.phy','fifty.phy', 'ninety.phy',
+												'ten.corr','fifty.corr','ninety.corr')){
+#filename=paste0(p,'_param_hists.pdf')
+dat=get(p)
+dat=filter(dat,Generating_model=='OUM')
+dat=dat$alpha.est
+#REMOVE TWO OUTLIERS AT EXTREMES OF DISTRIBUTIOMN FOR NICER PLOTS
+dat=sort(dat)[6:996]
+#hist(dat,main=p)
+params_by_model[[length(params_by_model)+1]]=dat
+names(params_by_model)[length(params_by_model)]=p
+}
+beeswarm(params_by_model,
+				 corral='random',
+				 cex=0.35,
+				 col='darkgrey',
+				 ylim=c(0.5,2.5),
+				 				 pch=19,
+				 				 labels=c('nMT','10% rMT','50% rMT','90% rMT',
+				 				 '10% cluMT','50% cluMT', '90% cluMT',
+				 				 '10% corMT','50% corMT', '90% corMT'))
+prec=list()
+bias=list()
+for (m in params_by_model){
+	prec[length(prec)+1]=round(mad(m),3)
+	bias[length(bias)+1]=round(mean(m)-alpha,3)
+}
+bias=unlist(bias)/alpha
+biastable[10,]=round(bias,4)
+prec=unlist(prec)/alpha
+prectable[10,]=round(prec,4)
+
+lines(x=c(-100,100),y=c(alpha,alpha),lty=2)
+text(x=10.5,y=1.6,labels=expression(paste(alpha,' OUM')),cex=2.5)
+text(x=0.3,y=2.2,labels='J',cex=4)
+
+
 dev.off()
 
