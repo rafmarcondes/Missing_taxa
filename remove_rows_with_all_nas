@@ -1,0 +1,9 @@
+remove_rows_with_all_nas=function(df){
+l=list()
+for (r in 1:nrow(df)){
+	l[length(l)+1]=all(is.na(df[r,]))
+}
+l=unlist(l)
+l=!l
+df=df[l,]
+}
