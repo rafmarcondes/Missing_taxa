@@ -1,3 +1,21 @@
+#######Script used to produce Figure 2 in a manuscript entitled "Realistic scenarios of missing taxa###
+#######in phylogenetic comparative methods and their effects on model selection and parameter estimation", 
+#######submitted to PeerJ on June 2019.
+
+#######If you need help understanding or re-using my scripts, please feel free to email
+####### me at raf.marcondes@gmail.com
+
+#######If you adapt or re-use any of my scripts, please consider citing my PeerJ 
+#######manuscript in any resulting publications.
+
+#######Thanks for looking at my scripts!
+
+#######Rafael S. Marcondes
+
+#######Louisiana State University
+
+#######June 2019
+
 source('/Users/Rafael/Dropbox/data_and_scripts/remove_rows_with_all_nas.R')
 library(dplyr)
 library(RColorBrewer)
