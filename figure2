@@ -1,0 +1,480 @@
+source('/Users/Rafael/Dropbox/data_and_scripts/remove_rows_with_all_nas.R')
+library(dplyr)
+library(RColorBrewer)
+library(data.table)
+library(tibble)
+col=brewer.pal(4,'Accent')
+names(col)=c('BM','BMS','OU','OUM')
+
+corr=readRDS('/Users/Rafael/Dropbox/data_and_scripts/missdata/results/corr_master_table.rds')
+phy=readRDS('/Users/Rafael/Dropbox/data_and_scripts/missdata/results/phy_master_table.rds')
+
+##########import and prepare data###############
+setwd('/Users/Rafael/Dropbox/data_and_scripts/missdata/corr_results_12sep2018/')
+#corr=summarizemissdatasims_corr()
+#saveRDS(object=corr, file='/Users/Rafael/Dropbox/data_and_scripts/missdata/results/corr_master_table.rds')
+
+setwd('/Users/Rafael/Dropbox/data_and_scripts/missdata/phy_results_12sep2018')
+#phy=summarizemissdatasims()
+#saveRDS(object=phy, file='/Users/Rafael/Dropbox/data_and_scripts/missdata/results/phy_master_table.rds')
+
+setwd('/Users/Rafael/Dropbox/data_and_scripts/missdata/results')
+
+############D means############
+setwd('/Users/Rafael/Dropbox/data_and_scripts/missdata/results/')
+
+D_rand_miss=mean(filter(.data=corr,Randommissing==T)$D)
+D_phy_miss=mean(phy$D)
+D_corr_BM=mean(filter(.data=corr,Randommissing==F,Nomissing==F,Generating_model=='BM')$D)
+D_corr_BMS=mean(filter(.data=corr,Randommissing==F,Nomissing==F,Generating_model=='BMS')$D)
+D_corr_OU=mean(filter(.data=corr,Randommissing==F,Nomissing==F,Generating_model=='OU')$D)
+D_corr_OUM=mean(filter(.data=corr,Randommissing==F,Nomissing==F,Generating_model=='OUM')$D)
+Dresults=c(D_rand_miss,D_phy_miss,D_corr_BM,D_corr_BMS,D_corr_OU,D_corr_OUM)
+names(Dresults)=c('rand','phy','corr_BM','corr_BMS','corr_OU','corr_OUM')
+saveRDS(object=Dresults,file='Dresults.RDS')
+
+#######misselected  and delta tables############
+
+misselected=as.data.frame(matrix(nrow=10,ncol=4))
+colnames(misselected)=c('BM','BMS','OU','OUM')
+rownames(misselected)=c('no.missing','ten.rand','fifty.rand','ninety.rand',
+												'ten.phy','fifty.phy', 'ninety.phy',
+												'ten.corr','fifty.corr','ninety.corr')
+miss_delta=misselected
+
+no.missing=filter(.data=corr, Nomissing==T)
+dat=no.missing
+ugh=filter(.data=dat,Generating_model=='OUM')[1:1000,]
+ogh=filter(.data=dat,Generating_model=='OU')[1:1000,]
+igh=filter(.data=dat,Generating_model=='BMS')[1:1000,]
+egh=filter(.data=dat,Generating_model=='BM')[1:1000,]
+dat=rbind(ugh,ogh)
+dat=rbind(dat,igh)
+dat=rbind(dat,egh)
+no.missing=remove_rows_with_all_nas(dat)
+propmiss=c(NA,NA,NA,NA)
+names(propmiss)=c('BM','BMS','OU','OUM')
+delta=propmiss
+for (mod in c('BM','BMS','OU','OUM')){
+	AICcolname=paste0(mod,'_AICc')
+	propmiss[mod]=nrow(filter(.data=no.missing,Generating_model==mod, get(AICcolname)!=0))/nrow(filter(.data=no.missing,Generating_model==mod))
+	bla=filter(.data=no.missing,Generating_model==mod, get(AICcolname)!=0)
+	delta[mod]=median(bla[,AICcolname])
+	}
+misselected['no.missing',]=propmiss
+miss_delta['no.missing',]=delta
+
+
+ten.rand=filter(.data=corr, Randommissing==T,pmissing==0.1)
+dat=ten.rand
+ugh=filter(.data=dat,Generating_model=='OUM')[1:1000,]
+ogh=filter(.data=dat,Generating_model=='OU')[1:1000,]
+igh=filter(.data=dat,Generating_model=='BMS')[1:1000,]
+egh=filter(.data=dat,Generating_model=='BM')[1:1000,]
+dat=rbind(ugh,ogh)
+dat=rbind(dat,igh)
+dat=rbind(dat,egh)
+ten.rand=remove_rows_with_all_nas(dat)
+propmiss=c(NA,NA,NA,NA)
+names(propmiss)=c('BM','BMS','OU','OUM')
+delta=propmiss
+for (mod in c('BM','BMS','OU','OUM')){
+	AICcolname=paste0(mod,'_AICc')
+	propmiss[mod]=nrow(filter(.data=ten.rand,Generating_model==mod, get(AICcolname)!=0))/nrow(filter(.data=ten.rand,Generating_model==mod))
+	bla=filter(.data=ten.rand,Generating_model==mod, get(AICcolname)!=0)
+	delta[mod]=median(bla[,AICcolname])
+	}
+misselected['ten.rand',]=propmiss
+miss_delta['ten.rand',]=delta
+
+
+fifty.rand=filter(.data=corr, Randommissing==T,pmissing==0.5)
+dat=fifty.rand
+ugh=filter(.data=dat,Generating_model=='OUM')[1:1000,]
+ogh=filter(.data=dat,Generating_model=='OU')[1:1000,]
+igh=filter(.data=dat,Generating_model=='BMS')[1:1000,]
+egh=filter(.data=dat,Generating_model=='BM')[1:1000,]
+dat=rbind(ugh,ogh)
+dat=rbind(dat,igh)
+dat=rbind(dat,egh)
+fifty.rand=remove_rows_with_all_nas(dat)
+propmiss=c(NA,NA,NA,NA)
+names(propmiss)=c('BM','BMS','OU','OUM')
+delta=propmiss
+for (mod in c('BM','BMS','OU','OUM')){
+	AICcolname=paste0(mod,'_AICc')
+	propmiss[mod]=nrow(filter(.data=fifty.rand,Generating_model==mod, get(AICcolname)!=0))/nrow(filter(.data=fifty.rand,Generating_model==mod))
+	bla=filter(.data=fifty.rand,Generating_model==mod, get(AICcolname)!=0)
+	delta[mod]=median(bla[,AICcolname])
+	}
+misselected['fifty.rand',]=propmiss
+miss_delta['fifty.rand',]=delta
+
+
+ninety.rand=filter(.data=corr, Randommissing==T,pmissing==0.9)
+dat=ninety.rand
+ugh=filter(.data=dat,Generating_model=='OUM')[1:1000,]
+ogh=filter(.data=dat,Generating_model=='OU')[1:1000,]
+igh=filter(.data=dat,Generating_model=='BMS')[1:1000,]
+egh=filter(.data=dat,Generating_model=='BM')[1:1000,]
+dat=rbind(ugh,ogh)
+dat=rbind(dat,igh)
+dat=rbind(dat,egh)
+ninety.rand=remove_rows_with_all_nas(dat)
+propmiss=c(NA,NA,NA,NA)
+names(propmiss)=c('BM','BMS','OU','OUM')
+delta=propmiss
+for (mod in c('BM','BMS','OU','OUM')){
+	AICcolname=paste0(mod,'_AICc')
+	propmiss[mod]=nrow(filter(.data=ninety.rand,Generating_model==mod, get(AICcolname)!=0))/nrow(filter(.data=ninety.rand,Generating_model==mod))
+	bla=filter(.data=ninety.rand,Generating_model==mod, get(AICcolname)!=0)
+	delta[mod]=median(bla[,AICcolname])
+	}
+misselected['ninety.rand',]=propmiss
+miss_delta['ninety.rand',]=delta
+
+#######################
+
+
+ten.phy=filter(.data=phy, Randommissing==F, Nomissing==F, pmissing==0.1)
+dat=ten.phy
+ugh=filter(.data=dat,Generating_model=='OUM')[1:1000,]
+ogh=filter(.data=dat,Generating_model=='OU')[1:1000,]
+igh=filter(.data=dat,Generating_model=='BMS')[1:1000,]
+egh=filter(.data=dat,Generating_model=='BM')[1:1000,]
+dat=rbind(ugh,ogh)
+dat=rbind(dat,igh)
+dat=rbind(dat,egh)
+ten.phy=remove_rows_with_all_nas(dat)
+propmiss=c(NA,NA,NA,NA)
+names(propmiss)=c('BM','BMS','OU','OUM')
+delta=propmiss
+for (mod in c('BM','BMS','OU','OUM')){
+	AICcolname=paste0(mod,'_AICc')
+	propmiss[mod]=nrow(filter(.data=ten.phy,Generating_model==mod, get(AICcolname)!=0))/nrow(filter(.data=ten.phy,Generating_model==mod))
+	bla=filter(.data=ten.phy,Generating_model==mod, get(AICcolname)!=0)
+	delta[mod]=median(bla[,AICcolname])
+	}
+misselected['ten.phy',]=propmiss
+miss_delta['ten.phy',]=delta
+
+
+fifty.phy=filter(.data=phy, Randommissing==F, Nomissing==F, pmissing==0.5)
+dat=fifty.phy
+ugh=filter(.data=dat,Generating_model=='OUM')[1:1000,]
+ogh=filter(.data=dat,Generating_model=='OU')[1:1000,]
+igh=filter(.data=dat,Generating_model=='BMS')[1:1000,]
+egh=filter(.data=dat,Generating_model=='BM')[1:1000,]
+dat=rbind(ugh,ogh)
+dat=rbind(dat,igh)
+dat=rbind(dat,egh)
+fifty.phy=remove_rows_with_all_nas(dat)
+propmiss=c(NA,NA,NA,NA)
+names(propmiss)=c('BM','BMS','OU','OUM')
+delta=propmiss
+for (mod in c('BM','BMS','OU','OUM')){
+	AICcolname=paste0(mod,'_AICc')
+	propmiss[mod]=nrow(filter(.data=fifty.phy,Generating_model==mod, get(AICcolname)!=0))/nrow(filter(.data=fifty.phy,Generating_model==mod))
+	bla=filter(.data=fifty.phy,Generating_model==mod, get(AICcolname)!=0)
+	delta[mod]=median(bla[,AICcolname])
+	}
+misselected['fifty.phy',]=propmiss
+miss_delta['fifty.phy',]=delta
+
+
+ninety.phy=filter(.data=phy, Randommissing==F, Nomissing==F, pmissing==0.9)
+dat=ninety.phy
+ugh=filter(.data=dat,Generating_model=='OUM')[1:1000,]
+ogh=filter(.data=dat,Generating_model=='OU')[1:1000,]
+igh=filter(.data=dat,Generating_model=='BMS')[1:1000,]
+egh=filter(.data=dat,Generating_model=='BM')[1:1000,]
+dat=rbind(ugh,ogh)
+dat=rbind(dat,igh)
+dat=rbind(dat,egh)
+ninety.phy=remove_rows_with_all_nas(dat)
+propmiss=c(NA,NA,NA,NA)
+names(propmiss)=c('BM','BMS','OU','OUM')
+delta=propmiss
+for (mod in c('BM','BMS','OU','OUM')){
+	AICcolname=paste0(mod,'_AICc')
+	propmiss[mod]=nrow(filter(.data=ninety.phy,Generating_model==mod, get(AICcolname)!=0))/nrow(filter(.data=ninety.phy,Generating_model==mod))
+	bla=filter(.data=ninety.phy,Generating_model==mod, get(AICcolname)!=0)
+	delta[mod]=median(bla[,AICcolname])
+	}
+misselected['ninety.phy',]=propmiss
+miss_delta['ninety.phy',]=delta
+
+
+#############
+
+
+ten.corr=filter(.data=corr, Randommissing==F, Nomissing==F, pmissing==0.1)
+dat=ten.corr
+ugh=filter(.data=dat,Generating_model=='OUM')[1:1000,]
+ogh=filter(.data=dat,Generating_model=='OU')[1:1000,]
+igh=filter(.data=dat,Generating_model=='BMS')[1:1000,]
+egh=filter(.data=dat,Generating_model=='BM')[1:1000,]
+dat=rbind(ugh,ogh)
+dat=rbind(dat,igh)
+dat=rbind(dat,egh)
+ten.corr=remove_rows_with_all_nas(dat)
+propmiss=c(NA,NA,NA,NA)
+names(propmiss)=c('BM','BMS','OU','OUM')
+delta=propmiss
+for (mod in c('BM','BMS','OU','OUM')){
+	AICcolname=paste0(mod,'_AICc')
+	propmiss[mod]=nrow(filter(.data=ten.corr,Generating_model==mod, get(AICcolname)!=0))/nrow(filter(.data=ten.corr,Generating_model==mod))
+	bla=filter(.data=ten.corr,Generating_model==mod, get(AICcolname)!=0)
+	delta[mod]=median(bla[,AICcolname])
+	}
+misselected['ten.corr',]=propmiss
+miss_delta['ten.corr',]=delta
+
+
+
+fifty.corr=filter(.data=corr, Randommissing==F, Nomissing==F, pmissing==0.5)
+dat=fifty.corr
+ugh=filter(.data=dat,Generating_model=='OUM')[1:1000,]
+ogh=filter(.data=dat,Generating_model=='OU')[1:1000,]
+igh=filter(.data=dat,Generating_model=='BMS')[1:1000,]
+egh=filter(.data=dat,Generating_model=='BM')[1:1000,]
+dat=rbind(ugh,ogh)
+dat=rbind(dat,igh)
+dat=rbind(dat,egh)
+fifty.corr=remove_rows_with_all_nas(dat)
+propmiss=c(NA,NA,NA,NA)
+names(propmiss)=c('BM','BMS','OU','OUM')
+delta=propmiss
+for (mod in c('BM','BMS','OU','OUM')){
+	AICcolname=paste0(mod,'_AICc')
+	propmiss[mod]=nrow(filter(.data=fifty.corr,Generating_model==mod, get(AICcolname)!=0))/nrow(filter(.data=fifty.corr,Generating_model==mod))
+	bla=filter(.data=fifty.corr,Generating_model==mod, get(AICcolname)!=0)
+	delta[mod]=median(bla[,AICcolname])
+	}
+misselected['fifty.corr',]=propmiss
+miss_delta['fifty.corr',]=delta
+
+
+
+ninety.corr=filter(.data=corr, Randommissing==F, Nomissing==F, pmissing==0.9)
+dat=ninety.corr
+ugh=filter(.data=dat,Generating_model=='OUM')[1:1000,]
+ogh=filter(.data=dat,Generating_model=='OU')[1:1000,]
+igh=filter(.data=dat,Generating_model=='BMS')[1:1000,]
+egh=filter(.data=dat,Generating_model=='BM')[1:1000,]
+dat=rbind(ugh,ogh)
+dat=rbind(dat,igh)
+dat=rbind(dat,egh)
+ninety.corr=remove_rows_with_all_nas(dat)
+propmiss=c(NA,NA,NA,NA)
+names(propmiss)=c('BM','BMS','OU','OUM')
+delta=propmiss
+for (mod in c('BM','BMS','OU','OUM')){
+	AICcolname=paste0(mod,'_AICc')
+	propmiss[mod]=nrow(filter(.data=ninety.corr,Generating_model==mod, get(AICcolname)!=0))/nrow(filter(.data=ninety.corr,Generating_model==mod))
+	bla=filter(.data=ninety.corr,Generating_model==mod, get(AICcolname)!=0)
+	delta[mod]=median(bla[,AICcolname])
+	}
+misselected['ninety.corr',]=propmiss
+miss_delta['ninety.corr',]=delta
+
+
+####count number of times each model was selected under each scenario AND MAKE FIGURE####
+
+pdf(file='FIG2_31JUL2019.pdf',height=23.38,width=16.54)
+layout(mat=matrix(nrow=4,ncol=3,data=1:12,byrow=T))
+plot.new()
+
+dat=no.missing
+dat[,ncol(dat)+1]=rep(NA,nrow(dat))
+for (row in 1:nrow(dat)){
+	if (dat[row,10]==0){dat[row,ncol(dat)]='BM'}
+	if (dat[row,11]==0){dat[row,ncol(dat)]='BMS'}
+	if (dat[row,12]==0){dat[row,ncol(dat)]='OU'}
+	if (dat[row,13]==0){dat[row,ncol(dat)]='OUM'}
+}
+dat=as.data.frame(table(dat[,c(14,25)]))
+dat[,4]=rep('no.missing',nrow(dat))
+colnames(dat)=c('genmodel','selectedmodel','n','scenario')
+no.missing=dat
+dat=dat[,1:3]
+dat=dcast(dat,selectedmodel~genmodel)
+dat=column_to_rownames(dat,'selectedmodel')
+par(mar=c(5,6,4,2))
+barplot(height=as.matrix(dat),col=col,ylab='Number of simulations',xlab='Generating model',
+				cex.axis=2,cex.names=2,cex.lab=2,xpd=NA,main='nMT',cex.main=3)
+
+plot.new()
+par(usr=c(0,1,0,1))
+legend(x=0.2,y=0.75,legend=names(col),col=col,cex=2.5,fill=col,bty='n',title='Selected model')
+	
+dat=ten.rand
+dat[,ncol(dat)+1]=rep(NA,nrow(dat))
+for (row in 1:nrow(dat)){
+	if (dat[row,10]==0){dat[row,ncol(dat)]='BM'}
+	if (dat[row,11]==0){dat[row,ncol(dat)]='BMS'}
+	if (dat[row,12]==0){dat[row,ncol(dat)]='OU'}
+	if (dat[row,13]==0){dat[row,ncol(dat)]='OUM'}
+}
+dat=as.data.frame(table(dat[,c(14,25)]))
+dat[,4]=rep('ten.rand',nrow(dat))
+colnames(dat)=c('genmodel','selectedmodel','n','scenario')
+ten.rand=dat
+dat=dat[,1:3]
+dat=dcast(dat,selectedmodel~genmodel)
+dat=column_to_rownames(dat,'selectedmodel')
+barplot(height=as.matrix(dat),col=col,ylab='Number of simulations',xlab='',names.arg=c('','','',''),
+				cex.axis=2,cex.names=2,cex.lab=2,xpd=NA,main='10% rMT',cex.main=3)
+
+dat=fifty.rand
+dat[,ncol(dat)+1]=rep(NA,nrow(dat))
+for (row in 1:nrow(dat)){
+	if (dat[row,10]==0){dat[row,ncol(dat)]='BM'}
+	if (dat[row,11]==0){dat[row,ncol(dat)]='BMS'}
+	if (dat[row,12]==0){dat[row,ncol(dat)]='OU'}
+	if (dat[row,13]==0){dat[row,ncol(dat)]='OUM'}
+}
+dat=as.data.frame(table(dat[,c(14,25)]))
+dat[,4]=rep('fifty.rand',nrow(dat))
+colnames(dat)=c('genmodel','selectedmodel','n','scenario')
+fifty.rand=dat
+dat=dat[,1:3]
+dat=dcast(dat,selectedmodel~genmodel)
+dat=column_to_rownames(dat,'selectedmodel')
+barplot(height=as.matrix(dat),col=col,xlab='',names.arg=c('','','',''),
+				cex.axis=2,cex.names=2,cex.lab=2,xpd=NA,main='50% rMT',cex.main=3)
+
+dat=ninety.rand
+dat[,ncol(dat)+1]=rep(NA,nrow(dat))
+for (row in 1:nrow(dat)){
+	if (dat[row,10]==0){dat[row,ncol(dat)]='BM'}
+	if (dat[row,11]==0){dat[row,ncol(dat)]='BMS'}
+	if (dat[row,12]==0){dat[row,ncol(dat)]='OU'}
+	if (dat[row,13]==0){dat[row,ncol(dat)]='OUM'}
+}
+dat=as.data.frame(table(dat[,c(14,25)]))
+dat[,4]=rep('ninety.rand',nrow(dat))
+colnames(dat)=c('genmodel','selectedmodel','n','scenario')
+ninety.rand=dat
+dat=dat[,1:3]
+dat=dcast(dat,selectedmodel~genmodel)
+dat=column_to_rownames(dat,'selectedmodel')
+barplot(height=as.matrix(dat),col=col,xlab='',names.arg=c('','','',''),
+				cex.axis=2,cex.names=2,cex.lab=2,xpd=NA,main='90% rMT',cex.main=3)
+
+dat=ten.phy
+dat[,ncol(dat)+1]=rep(NA,nrow(dat))
+for (row in 1:nrow(dat)){
+	if (dat[row,9]==0){dat[row,ncol(dat)]='BM'}
+	if (dat[row,10]==0){dat[row,ncol(dat)]='BMS'}
+	if (dat[row,11]==0){dat[row,ncol(dat)]='OU'}
+	if (dat[row,12]==0){dat[row,ncol(dat)]='OUM'}
+}
+dat=as.data.frame(table(dat[,c(13,24)]))
+dat[,4]=rep('ten.phy',nrow(dat))
+colnames(dat)=c('genmodel','selectedmodel','n','scenario')
+ten.phy=dat
+dat=dat[,1:3]
+dat=dcast(dat,selectedmodel~genmodel)
+dat=column_to_rownames(dat,'selectedmodel')
+barplot(height=as.matrix(dat),col=col,ylab='Number of simulations',xlab='',names.arg=c('','','',''),
+				cex.axis=2,cex.names=2,cex.lab=2,xpd=NA,main='10% cluMT',cex.main=3)
+
+dat=fifty.phy
+dat[,ncol(dat)+1]=rep(NA,nrow(dat))
+for (row in 1:nrow(dat)){
+	if (dat[row,9]==0){dat[row,ncol(dat)]='BM'}
+	if (dat[row,10]==0){dat[row,ncol(dat)]='BMS'}
+	if (dat[row,11]==0){dat[row,ncol(dat)]='OU'}
+	if (dat[row,12]==0){dat[row,ncol(dat)]='OUM'}
+}
+dat=as.data.frame(table(dat[,c(13,24)]))
+dat[,4]=rep('fifty.phy',nrow(dat))
+colnames(dat)=c('genmodel','selectedmodel','n','scenario')
+fifty.phy=dat
+dat=dat[,1:3]
+dat=dcast(dat,selectedmodel~genmodel)
+dat=column_to_rownames(dat,'selectedmodel')
+barplot(height=as.matrix(dat),col=col,xlab='',names.arg=c('','','',''),
+				cex.axis=2,cex.names=2,cex.lab=2,xpd=NA,main='50% cluMT',cex.main=3)
+
+dat=ninety.phy
+dat[,ncol(dat)+1]=rep(NA,nrow(dat))
+for (row in 1:nrow(dat)){
+	if (dat[row,9]==0){dat[row,ncol(dat)]='BM'}
+	if (dat[row,10]==0){dat[row,ncol(dat)]='BMS'}
+	if (dat[row,11]==0){dat[row,ncol(dat)]='OU'}
+	if (dat[row,12]==0){dat[row,ncol(dat)]='OUM'}
+}
+dat=as.data.frame(table(dat[,c(13,24)]))
+dat[,4]=rep('ninety.phy',nrow(dat))
+colnames(dat)=c('genmodel','selectedmodel','n','scenario')
+ninety.phy=dat
+dat=dat[,1:3]
+dat=dcast(dat,selectedmodel~genmodel)
+dat=column_to_rownames(dat,'selectedmodel')
+barplot(height=as.matrix(dat),col=col,xlab='',names.arg=c('','','',''),
+				cex.axis=2,cex.names=2,cex.lab=2,xpd=NA,main='90% cluMT',cex.main=3)
+
+dat=ten.corr
+dat[,ncol(dat)+1]=rep(NA,nrow(dat))
+for (row in 1:nrow(dat)){
+	if (dat[row,10]==0){dat[row,ncol(dat)]='BM'}
+	if (dat[row,11]==0){dat[row,ncol(dat)]='BMS'}
+	if (dat[row,12]==0){dat[row,ncol(dat)]='OU'}
+	if (dat[row,13]==0){dat[row,ncol(dat)]='OUM'}
+}
+dat=as.data.frame(table(dat[,c(14,25)]))
+dat[,4]=rep('ten.corr',nrow(dat))
+colnames(dat)=c('genmodel','selectedmodel','n','scenario')
+ten.corr=dat
+dat=dat[,1:3]
+dat=dcast(dat,selectedmodel~genmodel)
+dat=column_to_rownames(dat,'selectedmodel')
+barplot(height=as.matrix(dat),col=col,ylab='Number of simulations',xlab='Generating model',
+				cex.axis=2,cex.names=2,cex.lab=2,xpd=NA,main='10% corMT',cex.main=3)
+
+dat=fifty.corr
+dat[,ncol(dat)+1]=rep(NA,nrow(dat))
+for (row in 1:nrow(dat)){
+	if (dat[row,10]==0){dat[row,ncol(dat)]='BM'}
+	if (dat[row,11]==0){dat[row,ncol(dat)]='BMS'}
+	if (dat[row,12]==0){dat[row,ncol(dat)]='OU'}
+	if (dat[row,13]==0){dat[row,ncol(dat)]='OUM'}
+}
+dat=as.data.frame(table(dat[,c(14,25)]))
+dat[,4]=rep('fifty.corr',nrow(dat))
+colnames(dat)=c('genmodel','selectedmodel','n','scenario')
+fifty.corr=dat
+dat=dat[,1:3]
+dat=dcast(dat,selectedmodel~genmodel)
+dat=column_to_rownames(dat,'selectedmodel')
+barplot(height=as.matrix(dat),col=col,xlab='Generating model',
+				cex.axis=2,cex.names=2,cex.lab=2,xpd=NA,main='50% corMT',cex.main=3)
+
+dat=ninety.corr
+dat[,ncol(dat)+1]=rep(NA,nrow(dat))
+for (row in 1:nrow(dat)){
+	if (dat[row,10]==0){dat[row,ncol(dat)]='BM'}
+	if (dat[row,11]==0){dat[row,ncol(dat)]='BMS'}
+	if (dat[row,12]==0){dat[row,ncol(dat)]='OU'}
+	if (dat[row,13]==0){dat[row,ncol(dat)]='OUM'}
+}
+dat=as.data.frame(table(dat[,c(14,25)]))
+dat[,4]=rep('ninety.corr',nrow(dat))
+colnames(dat)=c('genmodel','selectedmodel','n','scenario')
+ninety.corr=dat
+dat=dat[,1:3]
+dat=dcast(dat,selectedmodel~genmodel)
+dat=column_to_rownames(dat,'selectedmodel')
+barplot(height=as.matrix(dat),col=col,xlab='Generating model',
+				cex.axis=2,cex.names=2,cex.lab=2,xpd=NA,main='90% corMT',cex.main=3)
+
+dev.off()
+
+
+table=rbind(no.missing,ten.rand,fifty.rand,ninety.rand,ten.phy,fifty.phy,ninety.phy,ten.corr,fifty.corr,ninety.corr)
+
+
+
+
