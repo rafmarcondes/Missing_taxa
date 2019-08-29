@@ -1,704 +1,672 @@
-#######A script to summarize the results of simulations of realistic missing taxa missing taxa in phylogenetic####
-#######comparative datasets, as described in a manuscript entitled "Realistic scenarios of missing taxa###
-#######in phylogenetic comparative methods and their effects on model selection and parameter estimation", 
-#######submitted to PeerJ on June 2019.
+####### A script to summarize the results of simulations of realistic missing taxa missing taxa in phylogenetic####
+####### comparative datasets, as described in a manuscript entitled "Realistic scenarios of missing taxa###
+####### in phylogenetic comparative methods and their effects on model selection and parameter estimation",
+####### submitted to PeerJ on June 2019.
 ### This script also generates Figure 3 and Tables 2-5 of the aforementioned manuscript
 
-#######If you adapt ot re-use any of my scripts, please consider citing my the PeerJ 
-#######manuscript in any resulting publications.
+####### If you adapt ot re-use any of my scripts, please consider citing my the PeerJ
+####### manuscript in any resulting publications.
 
-#######Thanks for looking at my scripts!
+####### Thanks for looking at my scripts!
 
-#######Rafael S. Marcondes
+####### Rafael S. Marcondes
 
-#######Louisiana State University
+####### Louisiana State University
 
-#######July 2019
+####### July 2019
 
-source('/Users/Rafael/Dropbox/data_and_scripts/missdata/correlated_MT.R')
-source('/Users/Rafael/Dropbox/data_and_scripts/missdata/clumped_MT.R')
-source('/Users/Rafael/Dropbox/data_and_scripts/remove_rows_with_all_nas.R')
+source("/Users/Rafael/Dropbox/data_and_scripts/missdata/correlated_MT.R")
+source("/Users/Rafael/Dropbox/data_and_scripts/missdata/clumped_MT.R")
+source("/Users/Rafael/Dropbox/data_and_scripts/remove_rows_with_all_nas.R")
 library(dplyr)
 
-corr=readRDS('/Users/Rafael/Dropbox/data_and_scripts/missdata/results/corr_master_table.rds')
-phy=readRDS('/Users/Rafael/Dropbox/data_and_scripts/missdata/results/phy_master_table.rds')
+########## import data###############
 
-##########import and prepare data###############
-setwd('/Users/Rafael/Dropbox/data_and_scripts/missdata/corr_results_12sep2018/')
-#corr=summarizemissdatasims_corr()
-#saveRDS(object=corr, file='/Users/Rafael/Dropbox/data_and_scripts/missdata/results/corr_master_table.rds')
+corr <- readRDS("/Users/Rafael/Dropbox/data_and_scripts/missdata/results/corr_master_table.rds")
+phy <- readRDS("/Users/Rafael/Dropbox/data_and_scripts/missdata/results/phy_master_table.rds")
 
-setwd('/Users/Rafael/Dropbox/data_and_scripts/missdata/phy_results_12sep2018')
-#phy=summarizemissdatasims()
-#saveRDS(object=phy, file='/Users/Rafael/Dropbox/data_and_scripts/missdata/results/phy_master_table.rds')
+############ D means############
+setwd("/Users/Rafael/Dropbox/data_and_scripts/missdata/results/")
 
-setwd('/Users/Rafael/Dropbox/data_and_scripts/missdata/results')
+D_rand_miss <- mean(filter(.data = corr, Randommissing == T)$D)
+D_phy_miss <- mean(phy$D)
+D_corr_BM <- mean(filter(.data = corr, Randommissing == F, Nomissing == F, Generating_model == "BM")$D)
+D_corr_BMS <- mean(filter(.data = corr, Randommissing == F, Nomissing == F, Generating_model == "BMS")$D)
+D_corr_OU <- mean(filter(.data = corr, Randommissing == F, Nomissing == F, Generating_model == "OU")$D)
+D_corr_OUM <- mean(filter(.data = corr, Randommissing == F, Nomissing == F, Generating_model == "OUM")$D)
+Dresults <- c(D_rand_miss, D_phy_miss, D_corr_BM, D_corr_BMS, D_corr_OU, D_corr_OUM)
+names(Dresults) <- c("rand", "phy", "corr_BM", "corr_BMS", "corr_OU", "corr_OUM")
+saveRDS(object = Dresults, file = "Dresults.RDS")
 
-############D means############
-setwd('/Users/Rafael/Dropbox/data_and_scripts/missdata/results/')
+####### misselected  and delta tables############
 
-D_rand_miss=mean(filter(.data=corr,Randommissing==T)$D)
-D_phy_miss=mean(phy$D)
-D_corr_BM=mean(filter(.data=corr,Randommissing==F,Nomissing==F,Generating_model=='BM')$D)
-D_corr_BMS=mean(filter(.data=corr,Randommissing==F,Nomissing==F,Generating_model=='BMS')$D)
-D_corr_OU=mean(filter(.data=corr,Randommissing==F,Nomissing==F,Generating_model=='OU')$D)
-D_corr_OUM=mean(filter(.data=corr,Randommissing==F,Nomissing==F,Generating_model=='OUM')$D)
-Dresults=c(D_rand_miss,D_phy_miss,D_corr_BM,D_corr_BMS,D_corr_OU,D_corr_OUM)
-names(Dresults)=c('rand','phy','corr_BM','corr_BMS','corr_OU','corr_OUM')
-saveRDS(object=Dresults,file='Dresults.RDS')
+misselected <- as.data.frame(matrix(nrow = 10, ncol = 4))
+colnames(misselected) <- c("BM", "BMS", "OU", "OUM")
+rownames(misselected) <- c(
+  "no.missing", "ten.rand", "fifty.rand", "ninety.rand",
+  "ten.phy", "fifty.phy", "ninety.phy",
+  "ten.corr", "fifty.corr", "ninety.corr"
+)
+miss_delta <- misselected
 
-#######misselected  and delta tables############
-
-misselected=as.data.frame(matrix(nrow=10,ncol=4))
-colnames(misselected)=c('BM','BMS','OU','OUM')
-rownames(misselected)=c('no.missing','ten.rand','fifty.rand','ninety.rand',
-												'ten.phy','fifty.phy', 'ninety.phy',
-												'ten.corr','fifty.corr','ninety.corr')
-miss_delta=misselected
-
-no.missing=filter(.data=corr, Nomissing==T)
-dat=no.missing
-ugh=filter(.data=dat,Generating_model=='OUM')[1:1000,]
-ogh=filter(.data=dat,Generating_model=='OU')[1:1000,]
-igh=filter(.data=dat,Generating_model=='BMS')[1:1000,]
-egh=filter(.data=dat,Generating_model=='BM')[1:1000,]
-dat=rbind(ugh,ogh)
-dat=rbind(dat,igh)
-dat=rbind(dat,egh)
-no.missing=remove_rows_with_all_nas(dat)
-propmiss=c(NA,NA,NA,NA)
-names(propmiss)=c('BM','BMS','OU','OUM')
-delta=propmiss
-for (mod in c('BM','BMS','OU','OUM')){
-	AICcolname=paste0(mod,'_AICc')
-	propmiss[mod]=nrow(filter(.data=no.missing,Generating_model==mod, get(AICcolname)!=0))/nrow(filter(.data=no.missing,Generating_model==mod))
-	bla=filter(.data=no.missing,Generating_model==mod, get(AICcolname)!=0)
-	delta[mod]=median(bla[,AICcolname])
-	}
-misselected['no.missing',]=propmiss
-miss_delta['no.missing',]=delta
+no.missing <- filter(.data = corr, Nomissing == T)
+dat <- no.missing
+ugh <- filter(.data = dat, Generating_model == "OUM")[1:1000, ]
+ogh <- filter(.data = dat, Generating_model == "OU")[1:1000, ]
+igh <- filter(.data = dat, Generating_model == "BMS")[1:1000, ]
+egh <- filter(.data = dat, Generating_model == "BM")[1:1000, ]
+dat <- rbind(ugh, ogh)
+dat <- rbind(dat, igh)
+dat <- rbind(dat, egh)
+no.missing <- remove_rows_with_all_nas(dat)
+propmiss <- c(NA, NA, NA, NA)
+names(propmiss) <- c("BM", "BMS", "OU", "OUM")
+delta <- propmiss
+for (mod in c("BM", "BMS", "OU", "OUM")) {
+  AICcolname <- paste0(mod, "_AICc")
+  propmiss[mod] <- nrow(filter(.data = no.missing, Generating_model == mod, get(AICcolname) != 0)) / nrow(filter(.data = no.missing, Generating_model == mod))
+  bla <- filter(.data = no.missing, Generating_model == mod, get(AICcolname) != 0)
+  delta[mod] <- median(bla[, AICcolname])
+}
+misselected["no.missing", ] <- propmiss
+miss_delta["no.missing", ] <- delta
 
 
-ten.rand=filter(.data=corr, Randommissing==T,pmissing==0.1)
-dat=ten.rand
-ugh=filter(.data=dat,Generating_model=='OUM')[1:1000,]
-ogh=filter(.data=dat,Generating_model=='OU')[1:1000,]
-igh=filter(.data=dat,Generating_model=='BMS')[1:1000,]
-egh=filter(.data=dat,Generating_model=='BM')[1:1000,]
-dat=rbind(ugh,ogh)
-dat=rbind(dat,igh)
-dat=rbind(dat,egh)
-ten.rand=remove_rows_with_all_nas(dat)
-propmiss=c(NA,NA,NA,NA)
-names(propmiss)=c('BM','BMS','OU','OUM')
-delta=propmiss
-for (mod in c('BM','BMS','OU','OUM')){
-	AICcolname=paste0(mod,'_AICc')
-	propmiss[mod]=nrow(filter(.data=ten.rand,Generating_model==mod, get(AICcolname)!=0))/nrow(filter(.data=ten.rand,Generating_model==mod))
-	bla=filter(.data=ten.rand,Generating_model==mod, get(AICcolname)!=0)
-	delta[mod]=median(bla[,AICcolname])
-	}
-misselected['ten.rand',]=propmiss
-miss_delta['ten.rand',]=delta
+ten.rand <- filter(.data = corr, Randommissing == T, pmissing == 0.1)
+dat <- ten.rand
+ugh <- filter(.data = dat, Generating_model == "OUM")[1:1000, ]
+ogh <- filter(.data = dat, Generating_model == "OU")[1:1000, ]
+igh <- filter(.data = dat, Generating_model == "BMS")[1:1000, ]
+egh <- filter(.data = dat, Generating_model == "BM")[1:1000, ]
+dat <- rbind(ugh, ogh)
+dat <- rbind(dat, igh)
+dat <- rbind(dat, egh)
+ten.rand <- remove_rows_with_all_nas(dat)
+propmiss <- c(NA, NA, NA, NA)
+names(propmiss) <- c("BM", "BMS", "OU", "OUM")
+delta <- propmiss
+for (mod in c("BM", "BMS", "OU", "OUM")) {
+  AICcolname <- paste0(mod, "_AICc")
+  propmiss[mod] <- nrow(filter(.data = ten.rand, Generating_model == mod, get(AICcolname) != 0)) / nrow(filter(.data = ten.rand, Generating_model == mod))
+  bla <- filter(.data = ten.rand, Generating_model == mod, get(AICcolname) != 0)
+  delta[mod] <- median(bla[, AICcolname])
+}
+misselected["ten.rand", ] <- propmiss
+miss_delta["ten.rand", ] <- delta
 
 
-fifty.rand=filter(.data=corr, Randommissing==T,pmissing==0.5)
-dat=fifty.rand
-ugh=filter(.data=dat,Generating_model=='OUM')[1:1000,]
-ogh=filter(.data=dat,Generating_model=='OU')[1:1000,]
-igh=filter(.data=dat,Generating_model=='BMS')[1:1000,]
-egh=filter(.data=dat,Generating_model=='BM')[1:1000,]
-dat=rbind(ugh,ogh)
-dat=rbind(dat,igh)
-dat=rbind(dat,egh)
-fifty.rand=remove_rows_with_all_nas(dat)
-propmiss=c(NA,NA,NA,NA)
-names(propmiss)=c('BM','BMS','OU','OUM')
-delta=propmiss
-for (mod in c('BM','BMS','OU','OUM')){
-	AICcolname=paste0(mod,'_AICc')
-	propmiss[mod]=nrow(filter(.data=fifty.rand,Generating_model==mod, get(AICcolname)!=0))/nrow(filter(.data=fifty.rand,Generating_model==mod))
-	bla=filter(.data=fifty.rand,Generating_model==mod, get(AICcolname)!=0)
-	delta[mod]=median(bla[,AICcolname])
-	}
-misselected['fifty.rand',]=propmiss
-miss_delta['fifty.rand',]=delta
+fifty.rand <- filter(.data = corr, Randommissing == T, pmissing == 0.5)
+dat <- fifty.rand
+ugh <- filter(.data = dat, Generating_model == "OUM")[1:1000, ]
+ogh <- filter(.data = dat, Generating_model == "OU")[1:1000, ]
+igh <- filter(.data = dat, Generating_model == "BMS")[1:1000, ]
+egh <- filter(.data = dat, Generating_model == "BM")[1:1000, ]
+dat <- rbind(ugh, ogh)
+dat <- rbind(dat, igh)
+dat <- rbind(dat, egh)
+fifty.rand <- remove_rows_with_all_nas(dat)
+propmiss <- c(NA, NA, NA, NA)
+names(propmiss) <- c("BM", "BMS", "OU", "OUM")
+delta <- propmiss
+for (mod in c("BM", "BMS", "OU", "OUM")) {
+  AICcolname <- paste0(mod, "_AICc")
+  propmiss[mod] <- nrow(filter(.data = fifty.rand, Generating_model == mod, get(AICcolname) != 0)) / nrow(filter(.data = fifty.rand, Generating_model == mod))
+  bla <- filter(.data = fifty.rand, Generating_model == mod, get(AICcolname) != 0)
+  delta[mod] <- median(bla[, AICcolname])
+}
+misselected["fifty.rand", ] <- propmiss
+miss_delta["fifty.rand", ] <- delta
 
 
-ninety.rand=filter(.data=corr, Randommissing==T,pmissing==0.9)
-dat=ninety.rand
-ugh=filter(.data=dat,Generating_model=='OUM')[1:1000,]
-ogh=filter(.data=dat,Generating_model=='OU')[1:1000,]
-igh=filter(.data=dat,Generating_model=='BMS')[1:1000,]
-egh=filter(.data=dat,Generating_model=='BM')[1:1000,]
-dat=rbind(ugh,ogh)
-dat=rbind(dat,igh)
-dat=rbind(dat,egh)
-ninety.rand=remove_rows_with_all_nas(dat)
-propmiss=c(NA,NA,NA,NA)
-names(propmiss)=c('BM','BMS','OU','OUM')
-delta=propmiss
-for (mod in c('BM','BMS','OU','OUM')){
-	AICcolname=paste0(mod,'_AICc')
-	propmiss[mod]=nrow(filter(.data=ninety.rand,Generating_model==mod, get(AICcolname)!=0))/nrow(filter(.data=ninety.rand,Generating_model==mod))
-	bla=filter(.data=ninety.rand,Generating_model==mod, get(AICcolname)!=0)
-	delta[mod]=median(bla[,AICcolname])
-	}
-misselected['ninety.rand',]=propmiss
-miss_delta['ninety.rand',]=delta
+ninety.rand <- filter(.data = corr, Randommissing == T, pmissing == 0.9)
+dat <- ninety.rand
+ugh <- filter(.data = dat, Generating_model == "OUM")[1:1000, ]
+ogh <- filter(.data = dat, Generating_model == "OU")[1:1000, ]
+igh <- filter(.data = dat, Generating_model == "BMS")[1:1000, ]
+egh <- filter(.data = dat, Generating_model == "BM")[1:1000, ]
+dat <- rbind(ugh, ogh)
+dat <- rbind(dat, igh)
+dat <- rbind(dat, egh)
+ninety.rand <- remove_rows_with_all_nas(dat)
+propmiss <- c(NA, NA, NA, NA)
+names(propmiss) <- c("BM", "BMS", "OU", "OUM")
+delta <- propmiss
+for (mod in c("BM", "BMS", "OU", "OUM")) {
+  AICcolname <- paste0(mod, "_AICc")
+  propmiss[mod] <- nrow(filter(.data = ninety.rand, Generating_model == mod, get(AICcolname) != 0)) / nrow(filter(.data = ninety.rand, Generating_model == mod))
+  bla <- filter(.data = ninety.rand, Generating_model == mod, get(AICcolname) != 0)
+  delta[mod] <- median(bla[, AICcolname])
+}
+misselected["ninety.rand", ] <- propmiss
+miss_delta["ninety.rand", ] <- delta
 
 #######################
 
 
-ten.phy=filter(.data=phy, Randommissing==F, Nomissing==F, pmissing==0.1)
-dat=ten.phy
-ugh=filter(.data=dat,Generating_model=='OUM')[1:1000,]
-ogh=filter(.data=dat,Generating_model=='OU')[1:1000,]
-igh=filter(.data=dat,Generating_model=='BMS')[1:1000,]
-egh=filter(.data=dat,Generating_model=='BM')[1:1000,]
-dat=rbind(ugh,ogh)
-dat=rbind(dat,igh)
-dat=rbind(dat,egh)
-ten.phy=remove_rows_with_all_nas(dat)
-propmiss=c(NA,NA,NA,NA)
-names(propmiss)=c('BM','BMS','OU','OUM')
-delta=propmiss
-for (mod in c('BM','BMS','OU','OUM')){
-	AICcolname=paste0(mod,'_AICc')
-	propmiss[mod]=nrow(filter(.data=ten.phy,Generating_model==mod, get(AICcolname)!=0))/nrow(filter(.data=ten.phy,Generating_model==mod))
-	bla=filter(.data=ten.phy,Generating_model==mod, get(AICcolname)!=0)
-	delta[mod]=median(bla[,AICcolname])
-	}
-misselected['ten.phy',]=propmiss
-miss_delta['ten.phy',]=delta
+ten.phy <- filter(.data = phy, Randommissing == F, Nomissing == F, pmissing == 0.1)
+dat <- ten.phy
+ugh <- filter(.data = dat, Generating_model == "OUM")[1:1000, ]
+ogh <- filter(.data = dat, Generating_model == "OU")[1:1000, ]
+igh <- filter(.data = dat, Generating_model == "BMS")[1:1000, ]
+egh <- filter(.data = dat, Generating_model == "BM")[1:1000, ]
+dat <- rbind(ugh, ogh)
+dat <- rbind(dat, igh)
+dat <- rbind(dat, egh)
+ten.phy <- remove_rows_with_all_nas(dat)
+propmiss <- c(NA, NA, NA, NA)
+names(propmiss) <- c("BM", "BMS", "OU", "OUM")
+delta <- propmiss
+for (mod in c("BM", "BMS", "OU", "OUM")) {
+  AICcolname <- paste0(mod, "_AICc")
+  propmiss[mod] <- nrow(filter(.data = ten.phy, Generating_model == mod, get(AICcolname) != 0)) / nrow(filter(.data = ten.phy, Generating_model == mod))
+  bla <- filter(.data = ten.phy, Generating_model == mod, get(AICcolname) != 0)
+  delta[mod] <- median(bla[, AICcolname])
+}
+misselected["ten.phy", ] <- propmiss
+miss_delta["ten.phy", ] <- delta
 
 
-fifty.phy=filter(.data=phy, Randommissing==F, Nomissing==F, pmissing==0.5)
-dat=fifty.phy
-ugh=filter(.data=dat,Generating_model=='OUM')[1:1000,]
-ogh=filter(.data=dat,Generating_model=='OU')[1:1000,]
-igh=filter(.data=dat,Generating_model=='BMS')[1:1000,]
-egh=filter(.data=dat,Generating_model=='BM')[1:1000,]
-dat=rbind(ugh,ogh)
-dat=rbind(dat,igh)
-dat=rbind(dat,egh)
-fifty.phy=remove_rows_with_all_nas(dat)
-propmiss=c(NA,NA,NA,NA)
-names(propmiss)=c('BM','BMS','OU','OUM')
-delta=propmiss
-for (mod in c('BM','BMS','OU','OUM')){
-	AICcolname=paste0(mod,'_AICc')
-	propmiss[mod]=nrow(filter(.data=fifty.phy,Generating_model==mod, get(AICcolname)!=0))/nrow(filter(.data=fifty.phy,Generating_model==mod))
-	bla=filter(.data=fifty.phy,Generating_model==mod, get(AICcolname)!=0)
-	delta[mod]=median(bla[,AICcolname])
-	}
-misselected['fifty.phy',]=propmiss
-miss_delta['fifty.phy',]=delta
+fifty.phy <- filter(.data = phy, Randommissing == F, Nomissing == F, pmissing == 0.5)
+dat <- fifty.phy
+ugh <- filter(.data = dat, Generating_model == "OUM")[1:1000, ]
+ogh <- filter(.data = dat, Generating_model == "OU")[1:1000, ]
+igh <- filter(.data = dat, Generating_model == "BMS")[1:1000, ]
+egh <- filter(.data = dat, Generating_model == "BM")[1:1000, ]
+dat <- rbind(ugh, ogh)
+dat <- rbind(dat, igh)
+dat <- rbind(dat, egh)
+fifty.phy <- remove_rows_with_all_nas(dat)
+propmiss <- c(NA, NA, NA, NA)
+names(propmiss) <- c("BM", "BMS", "OU", "OUM")
+delta <- propmiss
+for (mod in c("BM", "BMS", "OU", "OUM")) {
+  AICcolname <- paste0(mod, "_AICc")
+  propmiss[mod] <- nrow(filter(.data = fifty.phy, Generating_model == mod, get(AICcolname) != 0)) / nrow(filter(.data = fifty.phy, Generating_model == mod))
+  bla <- filter(.data = fifty.phy, Generating_model == mod, get(AICcolname) != 0)
+  delta[mod] <- median(bla[, AICcolname])
+}
+misselected["fifty.phy", ] <- propmiss
+miss_delta["fifty.phy", ] <- delta
 
 
-ninety.phy=filter(.data=phy, Randommissing==F, Nomissing==F, pmissing==0.9)
-dat=ninety.phy
-ugh=filter(.data=dat,Generating_model=='OUM')[1:1000,]
-ogh=filter(.data=dat,Generating_model=='OU')[1:1000,]
-igh=filter(.data=dat,Generating_model=='BMS')[1:1000,]
-egh=filter(.data=dat,Generating_model=='BM')[1:1000,]
-dat=rbind(ugh,ogh)
-dat=rbind(dat,igh)
-dat=rbind(dat,egh)
-ninety.phy=remove_rows_with_all_nas(dat)
-propmiss=c(NA,NA,NA,NA)
-names(propmiss)=c('BM','BMS','OU','OUM')
-delta=propmiss
-for (mod in c('BM','BMS','OU','OUM')){
-	AICcolname=paste0(mod,'_AICc')
-	propmiss[mod]=nrow(filter(.data=ninety.phy,Generating_model==mod, get(AICcolname)!=0))/nrow(filter(.data=ninety.phy,Generating_model==mod))
-	bla=filter(.data=ninety.phy,Generating_model==mod, get(AICcolname)!=0)
-	delta[mod]=median(bla[,AICcolname])
-	}
-misselected['ninety.phy',]=propmiss
-miss_delta['ninety.phy',]=delta
+ninety.phy <- filter(.data = phy, Randommissing == F, Nomissing == F, pmissing == 0.9)
+dat <- ninety.phy
+ugh <- filter(.data = dat, Generating_model == "OUM")[1:1000, ]
+ogh <- filter(.data = dat, Generating_model == "OU")[1:1000, ]
+igh <- filter(.data = dat, Generating_model == "BMS")[1:1000, ]
+egh <- filter(.data = dat, Generating_model == "BM")[1:1000, ]
+dat <- rbind(ugh, ogh)
+dat <- rbind(dat, igh)
+dat <- rbind(dat, egh)
+ninety.phy <- remove_rows_with_all_nas(dat)
+propmiss <- c(NA, NA, NA, NA)
+names(propmiss) <- c("BM", "BMS", "OU", "OUM")
+delta <- propmiss
+for (mod in c("BM", "BMS", "OU", "OUM")) {
+  AICcolname <- paste0(mod, "_AICc")
+  propmiss[mod] <- nrow(filter(.data = ninety.phy, Generating_model == mod, get(AICcolname) != 0)) / nrow(filter(.data = ninety.phy, Generating_model == mod))
+  bla <- filter(.data = ninety.phy, Generating_model == mod, get(AICcolname) != 0)
+  delta[mod] <- median(bla[, AICcolname])
+}
+misselected["ninety.phy", ] <- propmiss
+miss_delta["ninety.phy", ] <- delta
 
 
 #############
 
 
-ten.corr=filter(.data=corr, Randommissing==F, Nomissing==F, pmissing==0.1)
-dat=ten.corr
-ugh=filter(.data=dat,Generating_model=='OUM')[1:1000,]
-ogh=filter(.data=dat,Generating_model=='OU')[1:1000,]
-igh=filter(.data=dat,Generating_model=='BMS')[1:1000,]
-egh=filter(.data=dat,Generating_model=='BM')[1:1000,]
-dat=rbind(ugh,ogh)
-dat=rbind(dat,igh)
-dat=rbind(dat,egh)
-ten.corr=remove_rows_with_all_nas(dat)
-propmiss=c(NA,NA,NA,NA)
-names(propmiss)=c('BM','BMS','OU','OUM')
-delta=propmiss
-for (mod in c('BM','BMS','OU','OUM')){
-	AICcolname=paste0(mod,'_AICc')
-	propmiss[mod]=nrow(filter(.data=ten.corr,Generating_model==mod, get(AICcolname)!=0))/nrow(filter(.data=ten.corr,Generating_model==mod))
-	bla=filter(.data=ten.corr,Generating_model==mod, get(AICcolname)!=0)
-	delta[mod]=median(bla[,AICcolname])
-	}
-misselected['ten.corr',]=propmiss
-miss_delta['ten.corr',]=delta
-
-
-
-fifty.corr=filter(.data=corr, Randommissing==F, Nomissing==F, pmissing==0.5)
-dat=fifty.corr
-ugh=filter(.data=dat,Generating_model=='OUM')[1:1000,]
-ogh=filter(.data=dat,Generating_model=='OU')[1:1000,]
-igh=filter(.data=dat,Generating_model=='BMS')[1:1000,]
-egh=filter(.data=dat,Generating_model=='BM')[1:1000,]
-dat=rbind(ugh,ogh)
-dat=rbind(dat,igh)
-dat=rbind(dat,egh)
-fifty.corr=remove_rows_with_all_nas(dat)
-propmiss=c(NA,NA,NA,NA)
-names(propmiss)=c('BM','BMS','OU','OUM')
-delta=propmiss
-for (mod in c('BM','BMS','OU','OUM')){
-	AICcolname=paste0(mod,'_AICc')
-	propmiss[mod]=nrow(filter(.data=fifty.corr,Generating_model==mod, get(AICcolname)!=0))/nrow(filter(.data=fifty.corr,Generating_model==mod))
-	bla=filter(.data=fifty.corr,Generating_model==mod, get(AICcolname)!=0)
-	delta[mod]=median(bla[,AICcolname])
-	}
-misselected['fifty.corr',]=propmiss
-miss_delta['fifty.corr',]=delta
-
-
-
-ninety.corr=filter(.data=corr, Randommissing==F, Nomissing==F, pmissing==0.9)
-dat=ninety.corr
-ugh=filter(.data=dat,Generating_model=='OUM')[1:1000,]
-ogh=filter(.data=dat,Generating_model=='OU')[1:1000,]
-igh=filter(.data=dat,Generating_model=='BMS')[1:1000,]
-egh=filter(.data=dat,Generating_model=='BM')[1:1000,]
-dat=rbind(ugh,ogh)
-dat=rbind(dat,igh)
-dat=rbind(dat,egh)
-ninety.corr=remove_rows_with_all_nas(dat)
-propmiss=c(NA,NA,NA,NA)
-names(propmiss)=c('BM','BMS','OU','OUM')
-delta=propmiss
-for (mod in c('BM','BMS','OU','OUM')){
-	AICcolname=paste0(mod,'_AICc')
-	propmiss[mod]=nrow(filter(.data=ninety.corr,Generating_model==mod, get(AICcolname)!=0))/nrow(filter(.data=ninety.corr,Generating_model==mod))
-	bla=filter(.data=ninety.corr,Generating_model==mod, get(AICcolname)!=0)
-	delta[mod]=median(bla[,AICcolname])
-	}
-misselected['ninety.corr',]=propmiss
-miss_delta['ninety.corr',]=delta
-
-###save tables
-misselected=misselected*1000
-saveRDS(object=misselected,file='table2.rds')
-write.csv(x=misselected,file='table2.csv')
-
-saveRDS(object=miss_delta,file='table3.rds')
-write.csv(x=miss_delta,file='table3.csv')
-
-
-#true params
-sigma0=corr[1,17]
-sigma1=filter(.data=corr,Generating_model=='BMS')[1,19]
-alpha=filter(.data=corr,Generating_model=='OU')[1,15]
-theta0=filter(.data=corr,Generating_model=='OUM')[1,21]
-theta1=filter(.data=corr,Generating_model=='OUM')[1,23]
-
-
-library(beeswarm)
-options(scipen=99999)
-pdf(file='fig3_revised_29jul2019.pdf',height=23.38,width=16.54)
-par(cex.axis=2,mar=c(2,4,2,2))
-layout(mat=matrix(nrow=10,ncol=1,data=1:10,byrow=T))
-
-biastable=matrix(ncol=10,nrow=10)
-colnames(biastable)=c('nMT','10% rMT','50% rMT','90% rMT',
-				 				 '10% cluMT','50% cluMT', '90% cluMT',
-				 				 '10% corMT','50% corMT', '90% corMT')
-rownames(biastable)=c('sigma0.BM','sigma0.BMS','sigma1.BMS','sigma0.OU','theta0.OU',
-											'alpha.OU','sigma0.OUM','theta0.OUM','theta1.OUM','alpha.OUM')
-											
-prectable=biastable
-
-####PANEL 1 - SIGMA0 BM#####
-params_by_model=list()
-for (p in c('no.missing','ten.rand','fifty.rand','ninety.rand',
-												'ten.phy','fifty.phy', 'ninety.phy',
-												'ten.corr','fifty.corr','ninety.corr')){
-#filename=paste0(p,'_param_hists.pdf')
-dat=get(p)
-dat=filter(dat,Generating_model=='BM')
-dat=dat$sigma0.est
-#REMOVE A FEW OUTLIERS AT EXTREMES OF DISTRIBUTIOMN FOR NICER PLOTS
-dat=sort(dat)[6:996]
-#hist(dat,main=p)
-params_by_model[[length(params_by_model)+1]]=dat
-names(params_by_model)[length(params_by_model)]=p
+ten.corr <- filter(.data = corr, Randommissing == F, Nomissing == F, pmissing == 0.1)
+dat <- ten.corr
+ugh <- filter(.data = dat, Generating_model == "OUM")[1:1000, ]
+ogh <- filter(.data = dat, Generating_model == "OU")[1:1000, ]
+igh <- filter(.data = dat, Generating_model == "BMS")[1:1000, ]
+egh <- filter(.data = dat, Generating_model == "BM")[1:1000, ]
+dat <- rbind(ugh, ogh)
+dat <- rbind(dat, igh)
+dat <- rbind(dat, egh)
+ten.corr <- remove_rows_with_all_nas(dat)
+propmiss <- c(NA, NA, NA, NA)
+names(propmiss) <- c("BM", "BMS", "OU", "OUM")
+delta <- propmiss
+for (mod in c("BM", "BMS", "OU", "OUM")) {
+  AICcolname <- paste0(mod, "_AICc")
+  propmiss[mod] <- nrow(filter(.data = ten.corr, Generating_model == mod, get(AICcolname) != 0)) / nrow(filter(.data = ten.corr, Generating_model == mod))
+  bla <- filter(.data = ten.corr, Generating_model == mod, get(AICcolname) != 0)
+  delta[mod] <- median(bla[, AICcolname])
 }
-beeswarm(params_by_model,
-				 corral='random',
-				 cex=0.35,
-				 col='darkgrey',
-				 #at=(1:length(params_by_model))/5,
-				 ylim=c(0.35,0.7),
-				 pch=19,
-				 labels='')
-prec=list()
-bias=list()
-for (m in params_by_model){
-	prec[length(prec)+1]=round(mad(m),4)
-	bias[length(bias)+1]=round(mean(m)-sigma0,4)
+misselected["ten.corr", ] <- propmiss
+miss_delta["ten.corr", ] <- delta
+
+
+
+fifty.corr <- filter(.data = corr, Randommissing == F, Nomissing == F, pmissing == 0.5)
+dat <- fifty.corr
+ugh <- filter(.data = dat, Generating_model == "OUM")[1:1000, ]
+ogh <- filter(.data = dat, Generating_model == "OU")[1:1000, ]
+igh <- filter(.data = dat, Generating_model == "BMS")[1:1000, ]
+egh <- filter(.data = dat, Generating_model == "BM")[1:1000, ]
+dat <- rbind(ugh, ogh)
+dat <- rbind(dat, igh)
+dat <- rbind(dat, egh)
+fifty.corr <- remove_rows_with_all_nas(dat)
+propmiss <- c(NA, NA, NA, NA)
+names(propmiss) <- c("BM", "BMS", "OU", "OUM")
+delta <- propmiss
+for (mod in c("BM", "BMS", "OU", "OUM")) {
+  AICcolname <- paste0(mod, "_AICc")
+  propmiss[mod] <- nrow(filter(.data = fifty.corr, Generating_model == mod, get(AICcolname) != 0)) / nrow(filter(.data = fifty.corr, Generating_model == mod))
+  bla <- filter(.data = fifty.corr, Generating_model == mod, get(AICcolname) != 0)
+  delta[mod] <- median(bla[, AICcolname])
 }
-bias=unlist(bias)/sigma0
-prec=unlist(prec)/sigma0
-biastable[1,]=round(bias,4)
-prectable[1,]=round(prec,4)
-lines(x=c(-100,100),y=c(sigma0,sigma0),lty=2)
-text(x=10.5,y=0.6,labels=expression(paste(sigma^2,''['0'],' BM')),cex=2.5)
-text(x=0.3,y=0.62,labels='A',cex=4)
+misselected["fifty.corr", ] <- propmiss
+miss_delta["fifty.corr", ] <- delta
 
 
-####PANEL 2 - SIGMA0 BMS####
-params_by_model=list()
-for (p in c('no.missing','ten.rand','fifty.rand','ninety.rand',
-												'ten.phy','fifty.phy', 'ninety.phy',
-												'ten.corr','fifty.corr','ninety.corr')){
-#filename=paste0(p,'_param_hists.pdf')
-dat=get(p)
-dat=filter(dat,Generating_model=='BMS')
-dat=dat$sigma0.est
-#REMOVE TWO OUTLIERS AT EXTREMES OF DISTRIBUTIOMN FOR NICER PLOTS
-dat=sort(dat)[6:996]
-#hist(dat,main=p)
-params_by_model[[length(params_by_model)+1]]=dat
-names(params_by_model)[length(params_by_model)]=p
+
+ninety.corr <- filter(.data = corr, Randommissing == F, Nomissing == F, pmissing == 0.9)
+dat <- ninety.corr
+ugh <- filter(.data = dat, Generating_model == "OUM")[1:1000, ]
+ogh <- filter(.data = dat, Generating_model == "OU")[1:1000, ]
+igh <- filter(.data = dat, Generating_model == "BMS")[1:1000, ]
+egh <- filter(.data = dat, Generating_model == "BM")[1:1000, ]
+dat <- rbind(ugh, ogh)
+dat <- rbind(dat, igh)
+dat <- rbind(dat, egh)
+ninety.corr <- remove_rows_with_all_nas(dat)
+propmiss <- c(NA, NA, NA, NA)
+names(propmiss) <- c("BM", "BMS", "OU", "OUM")
+delta <- propmiss
+for (mod in c("BM", "BMS", "OU", "OUM")) {
+  AICcolname <- paste0(mod, "_AICc")
+  propmiss[mod] <- nrow(filter(.data = ninety.corr, Generating_model == mod, get(AICcolname) != 0)) / nrow(filter(.data = ninety.corr, Generating_model == mod))
+  bla <- filter(.data = ninety.corr, Generating_model == mod, get(AICcolname) != 0)
+  delta[mod] <- median(bla[, AICcolname])
 }
-beeswarm(params_by_model,
-				 corral='random',
-				 cex=0.35,
-				 col='darkgrey',
-				 ylim=c(0.35,0.7),
-				 				 pch=19,
-				 				 labels='')
-prec=list()
-bias=list()
-for (m in params_by_model){
-	prec[length(prec)+1]=round(mad(m),3)
-	bias[length(bias)+1]=round(mean(m)-sigma0,3)
+misselected["ninety.corr", ] <- propmiss
+miss_delta["ninety.corr", ] <- delta
+
+### save tables
+misselected <- misselected * 1000
+saveRDS(object = misselected, file = "table2.rds")
+write.csv(x = misselected, file = "table2.csv")
+
+saveRDS(object = miss_delta, file = "table3.rds")
+write.csv(x = miss_delta, file = "table3.csv")
+
+
+# true params
+sigma0 <- corr[1, 17]
+sigma1 <- filter(.data = corr, Generating_model == "BMS")[1, 19]
+alpha <- filter(.data = corr, Generating_model == "OU")[1, 15]
+theta0 <- filter(.data = corr, Generating_model == "OUM")[1, 21]
+theta1 <- filter(.data = corr, Generating_model == "OUM")[1, 23]
+
+
+options(scipen = 99999)
+pdf(file = "fig3_boxplots_29aug2019.pdf", height = 23.38, width = 16.54)
+par(cex.axis = 2, mar = c(2, 4, 2, 2))
+layout(mat = matrix(nrow = 10, ncol = 1, data = 1:10, byrow = T))
+
+biastable <- matrix(ncol = 10, nrow = 10)
+colnames(biastable) <- c(
+  "nMT", "10% rMT", "50% rMT", "90% rMT",
+  "10% cluMT", "50% cluMT", "90% cluMT",
+  "10% corMT", "50% corMT", "90% corMT"
+)
+rownames(biastable) <- c(
+  "sigma0.BM", "sigma0.BMS", "sigma1.BMS", "sigma0.OU", "theta0.OU",
+  "alpha.OU", "sigma0.OUM", "theta0.OUM", "theta1.OUM", "alpha.OUM"
+)
+
+prectable <- biastable
+
+#### PANEL 1 - SIGMA0 BM#####
+params_by_model <- list()
+for (p in c(
+  "no.missing", "ten.rand", "fifty.rand", "ninety.rand",
+  "ten.phy", "fifty.phy", "ninety.phy",
+  "ten.corr", "fifty.corr", "ninety.corr"
+)) {
+  # filename=paste0(p,'_param_hists.pdf')
+  dat <- get(p)
+  dat <- filter(dat, Generating_model == "BM")
+  dat <- dat$sigma0.est
+  # REMOVE A FEW OUTLIERS AT EXTREMES OF DISTRIBUTIOMN FOR NICER PLOTS
+  dat <- sort(dat)[6:996]
+  # hist(dat,main=p)
+  params_by_model[[length(params_by_model) + 1]] <- dat
+  names(params_by_model)[length(params_by_model)] <- p
 }
-bias=unlist(bias)/sigma0
-biastable[2,]=round(bias,4)
-prec=unlist(prec)/sigma0
-prectable[2,]=round(prec,4)
+boxplot(params_by_model, col = "lightgrey", show.names = F)
 
-lines(x=c(-100,100),y=c(sigma0,sigma0),lty=2)
-text(x=10.5,y=0.6,labels=expression(paste(sigma^2,''['0'],' BMS')),cex=2.5)
-text(x=0.3,y=0.62,labels='B',cex=4)
 
-#####PANEL 3 - SIGMA1 BMS#####
-params_by_model=list()
-for (p in c('no.missing','ten.rand','fifty.rand','ninety.rand',
-												'ten.phy','fifty.phy', 'ninety.phy',
-												'ten.corr','fifty.corr','ninety.corr')){
-#filename=paste0(p,'_param_hists.pdf')
-dat=get(p)
-dat=filter(dat,Generating_model=='BMS')
-dat=dat$sigma1.est
-#REMOVE TWO OUTLIERS AT EXTREMES OF DISTRIBUTIOMN FOR NICER PLOTS
-dat=sort(dat)[6:996]
-#hist(dat,main=p)
-params_by_model[[length(params_by_model)+1]]=dat
-names(params_by_model)[length(params_by_model)]=p
+
+prec <- list()
+bias <- list()
+for (m in params_by_model) {
+  prec[length(prec) + 1] <- round(mad(m), 4)
+  bias[length(bias) + 1] <- round(mean(m) - sigma0, 4)
 }
-beeswarm(params_by_model,
-				 corral='random',
-				 cex=0.35,
-				 col='darkgrey',
-				 ylim=c(0.7,1.3),
-				 				 pch=19,
-				 				 labels='')
-prec=list()
-bias=list()
-for (m in params_by_model){
-	prec[length(prec)+1]=round(mad(m),3)
-	bias[length(bias)+1]=round(mean(m)-sigma1,3)
+bias <- unlist(bias) / sigma0
+prec <- unlist(prec) / sigma0
+biastable[1, ] <- round(bias, 4)
+prectable[1, ] <- round(prec, 4)
+lines(x = c(-100, 100), y = c(sigma0, sigma0), lty = 2)
+text(x = 10.5, y = 0.65, labels = expression(paste(sigma^2, ""["0"], " BM")), cex = 2.5)
+text(x = 0.3, y = 0.62, labels = "A", cex = 4)
+
+
+#### PANEL 2 - SIGMA0 BMS####
+params_by_model <- list()
+for (p in c(
+  "no.missing", "ten.rand", "fifty.rand", "ninety.rand",
+  "ten.phy", "fifty.phy", "ninety.phy",
+  "ten.corr", "fifty.corr", "ninety.corr"
+)) {
+  # filename=paste0(p,'_param_hists.pdf')
+  dat <- get(p)
+  dat <- filter(dat, Generating_model == "BMS")
+  dat <- dat$sigma0.est
+  # REMOVE TWO OUTLIERS AT EXTREMES OF DISTRIBUTIOMN FOR NICER PLOTS
+  dat <- sort(dat)[6:996]
+  # hist(dat,main=p)
+  params_by_model[[length(params_by_model) + 1]] <- dat
+  names(params_by_model)[length(params_by_model)] <- p
 }
-bias=unlist(bias)/sigma1
-biastable[3,]=round(bias,4)
-prec=unlist(prec)/sigma1
-prectable[3,]=round(prec,4)
+boxplot(params_by_model, col = "lightgrey", show.names = F)
 
-lines(x=c(-100,100),y=c(sigma1,sigma1),lty=2)
-text(x=10.5,y=1.15,labels=expression(paste(sigma^2,''['1'],' BMS')),cex=2.5)
-text(x=0.3,y=1.24,labels='C',cex=4)
-
-####PANEL 4 - SIGMA0 OU####
-params_by_model=list()
-for (p in c('no.missing','ten.rand','fifty.rand','ninety.rand',
-												'ten.phy','fifty.phy', 'ninety.phy',
-												'ten.corr','fifty.corr','ninety.corr')){
-#filename=paste0(p,'_param_hists.pdf')
-dat=get(p)
-dat=filter(dat,Generating_model=='OU')
-dat=dat$sigma0.est
-#REMOVE TWO OUTLIERS AT EXTREMES OF DISTRIBUTIOMN FOR NICER PLOTS
-dat=sort(dat)[6:996]
-#hist(dat,main=p)
-params_by_model[[length(params_by_model)+1]]=dat
-names(params_by_model)[length(params_by_model)]=p
+prec <- list()
+bias <- list()
+for (m in params_by_model) {
+  prec[length(prec) + 1] <- round(mad(m), 3)
+  bias[length(bias) + 1] <- round(mean(m) - sigma0, 3)
 }
-beeswarm(params_by_model,
-				 corral='random',
-				 cex=0.35,
-				 col='darkgrey',
-				 ylim=c(0.35,0.7),
-				 				 pch=19,
-				 labels='')
-prec=list()
-bias=list()
-for (m in params_by_model){
-	prec[length(prec)+1]=round(mad(m),3)
-	bias[length(bias)+1]=round(mean(m)-sigma0,3)
+bias <- unlist(bias) / sigma0
+biastable[2, ] <- round(bias, 4)
+prec <- unlist(prec) / sigma0
+prectable[2, ] <- round(prec, 4)
+
+lines(x = c(-100, 100), y = c(sigma0, sigma0), lty = 2)
+text(x = 10.5, y = 0.6, labels = expression(paste(sigma^2, ""["0"], " BMS")), cex = 2.5)
+text(x = 0.3, y = 0.62, labels = "B", cex = 4)
+
+##### PANEL 3 - SIGMA1 BMS#####
+params_by_model <- list()
+for (p in c(
+  "no.missing", "ten.rand", "fifty.rand", "ninety.rand",
+  "ten.phy", "fifty.phy", "ninety.phy",
+  "ten.corr", "fifty.corr", "ninety.corr"
+)) {
+  # filename=paste0(p,'_param_hists.pdf')
+  dat <- get(p)
+  dat <- filter(dat, Generating_model == "BMS")
+  dat <- dat$sigma1.est
+  # REMOVE TWO OUTLIERS AT EXTREMES OF DISTRIBUTIOMN FOR NICER PLOTS
+  dat <- sort(dat)[6:996]
+  # hist(dat,main=p)
+  params_by_model[[length(params_by_model) + 1]] <- dat
+  names(params_by_model)[length(params_by_model)] <- p
 }
-bias=unlist(bias)/sigma0
-biastable[4,]=round(bias,4)
-prec=unlist(prec)/sigma0
-prectable[4,]=round(prec,4)
+boxplot(params_by_model, col = "lightgrey", show.names = F)
 
-lines(x=c(-100,100),y=c(sigma0,sigma0),lty=2)
-text(x=10.5,y=0.6,labels=expression(paste(sigma^2,''['0'],' OU')),cex=2.5)
-text(x=0.3,y=0.62,labels='D',cex=4)
-
-####PANEL 5 - THETA0 OU####
-params_by_model=list()
-for (p in c('no.missing','ten.rand','fifty.rand','ninety.rand',
-												'ten.phy','fifty.phy', 'ninety.phy',
-												'ten.corr','fifty.corr','ninety.corr')){
-#filename=paste0(p,'_param_hists.pdf')
-dat=get(p)
-dat=filter(dat,Generating_model=='OU')
-dat=dat$theta0.est
-#REMOVE TWO OUTLIERS AT EXTREMES OF DISTRIBUTIOMN FOR NICER PLOTS
-dat=sort(dat)[6:996]
-#hist(dat,main=p)
-params_by_model[[length(params_by_model)+1]]=dat
-names(params_by_model)[length(params_by_model)]=p
+prec <- list()
+bias <- list()
+for (m in params_by_model) {
+  prec[length(prec) + 1] <- round(mad(m), 3)
+  bias[length(bias) + 1] <- round(mean(m) - sigma1, 3)
 }
-beeswarm(params_by_model,
-				 corral='random',
-				 cex=0.35,
-				 col='darkgrey',
-				 ylim=c(9.6,10.4),
-				 				 pch=19,
-				 				 labels='')
-prec=list()
-bias=list()
-for (m in params_by_model){
-	prec[length(prec)+1]=round(mad(m),3)
-	bias[length(bias)+1]=round(mean(m)-theta0,3)
+bias <- unlist(bias) / sigma1
+biastable[3, ] <- round(bias, 4)
+prec <- unlist(prec) / sigma1
+prectable[3, ] <- round(prec, 4)
+
+lines(x = c(-100, 100), y = c(sigma1, sigma1), lty = 2)
+text(x = 10.5, y = 1.4, labels = expression(paste(sigma^2, ""["1"], " BMS")), cex = 2.5)
+text(x = 0.3, y = 1.24, labels = "C", cex = 4)
+
+#### PANEL 4 - SIGMA0 OU####
+params_by_model <- list()
+for (p in c(
+  "no.missing", "ten.rand", "fifty.rand", "ninety.rand",
+  "ten.phy", "fifty.phy", "ninety.phy",
+  "ten.corr", "fifty.corr", "ninety.corr"
+)) {
+  # filename=paste0(p,'_param_hists.pdf')
+  dat <- get(p)
+  dat <- filter(dat, Generating_model == "OU")
+  dat <- dat$sigma0.est
+  # REMOVE TWO OUTLIERS AT EXTREMES OF DISTRIBUTIOMN FOR NICER PLOTS
+  dat <- sort(dat)[6:996]
+  # hist(dat,main=p)
+  params_by_model[[length(params_by_model) + 1]] <- dat
+  names(params_by_model)[length(params_by_model)] <- p
 }
-bias=unlist(bias)/theta0
-biastable[5,]=round(bias,4)
-prec=unlist(prec)/theta0
-prectable[5,]=round(prec,4)
+boxplot(params_by_model, col = "lightgrey", show.names = F)
 
-lines(x=c(-100,100),y=c(theta0,theta0),lty=2)
-text(x=10.5,y=10.15,labels=expression(paste(theta,''['0'],' OU')),cex=2.5)
-text(x=0.3,y=10.2,labels='E',cex=4)
-
-#####PANEL 6 - ALPHA OU#####
-params_by_model=list()
-for (p in c('no.missing','ten.rand','fifty.rand','ninety.rand',
-												'ten.phy','fifty.phy', 'ninety.phy',
-												'ten.corr','fifty.corr','ninety.corr')){
-#filename=paste0(p,'_param_hists.pdf')
-dat=get(p)
-dat=filter(dat,Generating_model=='OU')
-dat=dat$alpha.est
-#REMOVE TWO OUTLIERS AT EXTREMES OF DISTRIBUTIOMN FOR NICER PLOTS
-dat=sort(dat)[6:996]
-#hist(dat,main=p)
-params_by_model[[length(params_by_model)+1]]=dat
-names(params_by_model)[length(params_by_model)]=p
+prec <- list()
+bias <- list()
+for (m in params_by_model) {
+  prec[length(prec) + 1] <- round(mad(m), 3)
+  bias[length(bias) + 1] <- round(mean(m) - sigma0, 3)
 }
-beeswarm(params_by_model,
-				 corral='random',
-				 cex=0.35,
-				 col='darkgrey',
-				 ylim=c(0.5,2.5),
-				 				 pch=19,
-				 				 labels='')
-prec=list()
-bias=list()
-for (m in params_by_model){
-	prec[length(prec)+1]=round(mad(m),3)
-	bias[length(bias)+1]=round(mean(m)-alpha,3)
+bias <- unlist(bias) / sigma0
+biastable[4, ] <- round(bias, 4)
+prec <- unlist(prec) / sigma0
+prectable[4, ] <- round(prec, 4)
+
+lines(x = c(-100, 100), y = c(sigma0, sigma0), lty = 2)
+text(x = 10.5, y = 0.75, labels = expression(paste(sigma^2, ""["0"], " OU")), cex = 2.5)
+text(x = 0.3, y = 0.62, labels = "D", cex = 4)
+
+#### PANEL 5 - THETA0 OU####
+params_by_model <- list()
+for (p in c(
+  "no.missing", "ten.rand", "fifty.rand", "ninety.rand",
+  "ten.phy", "fifty.phy", "ninety.phy",
+  "ten.corr", "fifty.corr", "ninety.corr"
+)) {
+  # filename=paste0(p,'_param_hists.pdf')
+  dat <- get(p)
+  dat <- filter(dat, Generating_model == "OU")
+  dat <- dat$theta0.est
+  # REMOVE TWO OUTLIERS AT EXTREMES OF DISTRIBUTIOMN FOR NICER PLOTS
+  dat <- sort(dat)[6:996]
+  # hist(dat,main=p)
+  params_by_model[[length(params_by_model) + 1]] <- dat
+  names(params_by_model)[length(params_by_model)] <- p
 }
-bias=unlist(bias)/alpha
-biastable[6,]=round(bias,4)
-prec=unlist(prec)/alpha
-prectable[6,]=round(prec,4)
+boxplot(params_by_model, col = "lightgrey", show.names = F)
 
-lines(x=c(-100,100),y=c(alpha,alpha),lty=2)
-text(x=10.5,y=1.6,labels=expression(paste(alpha,' OU')),cex=2.5)
-text(x=0.3,y=2.2,labels='F',cex=4)
-
-####PANEL 7 - SIGMA0 OUM#####
-params_by_model=list()
-for (p in c('no.missing','ten.rand','fifty.rand','ninety.rand',
-												'ten.phy','fifty.phy', 'ninety.phy',
-												'ten.corr','fifty.corr','ninety.corr')){
-#filename=paste0(p,'_param_hists.pdf')
-dat=get(p)
-dat=filter(dat,Generating_model=='OUM')
-dat=dat$sigma0.est
-#REMOVE TWO OUTLIERS AT EXTREMES OF DISTRIBUTIOMN FOR NICER PLOTS
-dat=sort(dat)[6:996]
-#hist(dat,main=p)
-params_by_model[[length(params_by_model)+1]]=dat
-names(params_by_model)[length(params_by_model)]=p
+prec <- list()
+bias <- list()
+for (m in params_by_model) {
+  prec[length(prec) + 1] <- round(mad(m), 3)
+  bias[length(bias) + 1] <- round(mean(m) - theta0, 3)
 }
-beeswarm(params_by_model,
-				 corral='random',
-				 cex=0.35,
-				 col='darkgrey',
-				 ylim=c(0.35,0.7),
-				 				 pch=19,
-				 				 labels='')
-prec=list()
-bias=list()
-for (m in params_by_model){
-	prec[length(prec)+1]=round(mad(m),3)
-	bias[length(bias)+1]=round(mean(m)-sigma0,3)
+bias <- unlist(bias) / theta0
+biastable[5, ] <- round(bias, 4)
+prec <- unlist(prec) / theta0
+prectable[5, ] <- round(prec, 4)
+
+lines(x = c(-100, 100), y = c(theta0, theta0), lty = 2)
+text(x = 10.5, y = 10.15, labels = expression(paste(theta, ""["0"], " OU")), cex = 2.5)
+text(x = 0.3, y = 10.2, labels = "E", cex = 4)
+
+##### PANEL 6 - ALPHA OU#####
+params_by_model <- list()
+for (p in c(
+  "no.missing", "ten.rand", "fifty.rand", "ninety.rand",
+  "ten.phy", "fifty.phy", "ninety.phy",
+  "ten.corr", "fifty.corr", "ninety.corr"
+)) {
+  # filename=paste0(p,'_param_hists.pdf')
+  dat <- get(p)
+  dat <- filter(dat, Generating_model == "OU")
+  dat <- dat$alpha.est
+  # REMOVE TWO OUTLIERS AT EXTREMES OF DISTRIBUTIOMN FOR NICER PLOTS
+  dat <- sort(dat)[6:996]
+  # hist(dat,main=p)
+  params_by_model[[length(params_by_model) + 1]] <- dat
+  names(params_by_model)[length(params_by_model)] <- p
 }
-bias=unlist(bias)/sigma0
-biastable[7,]=round(bias,4)
-prec=unlist(prec)/sigma0
-prectable[7,]=round(prec,4)
+boxplot(params_by_model, col = "lightgrey", show.names = F)
 
-lines(x=c(-100,100),y=c(sigma0,sigma0),lty=2)
-text(x=10.5,y=0.6,labels=expression(paste(sigma^2,''['0'],' OUM')),cex=2.5)
-text(x=0.3,y=0.62,labels='G',cex=4)
-
-####PANEL 8 - THETA0 OUM####
-params_by_model=list()
-for (p in c('no.missing','ten.rand','fifty.rand','ninety.rand',
-												'ten.phy','fifty.phy', 'ninety.phy',
-												'ten.corr','fifty.corr','ninety.corr')){
-#filename=paste0(p,'_param_hists.pdf')
-dat=get(p)
-dat=filter(dat,Generating_model=='OUM')
-dat=dat$theta0.est
-#REMOVE TWO OUTLIERS AT EXTREMES OF DISTRIBUTIOMN FOR NICER PLOTS
-dat=sort(dat)[6:996]
-#hist(dat,main=p)
-params_by_model[[length(params_by_model)+1]]=dat
-names(params_by_model)[length(params_by_model)]=p
+prec <- list()
+bias <- list()
+for (m in params_by_model) {
+  prec[length(prec) + 1] <- round(mad(m), 3)
+  bias[length(bias) + 1] <- round(mean(m) - alpha, 3)
 }
-beeswarm(params_by_model,
-				 corral='random',
-				 cex=0.35,
-				 col='darkgrey',
-				 ylim=c(9.6,10.4),
-				 				 pch=19,
-				 				 labels='')
-prec=list()
-bias=list()
-for (m in params_by_model){
-	prec[length(prec)+1]=round(mad(m),3)
-	bias[length(bias)+1]=round(mean(m)-theta0,3)
+bias <- unlist(bias) / alpha
+biastable[6, ] <- round(bias, 4)
+prec <- unlist(prec) / alpha
+prectable[6, ] <- round(prec, 4)
+
+lines(x = c(-100, 100), y = c(alpha, alpha), lty = 2)
+text(x = 10.5, y = 2.5, labels = expression(paste(alpha, " OU")), cex = 2.5)
+text(x = 0.3, y = 2.2, labels = "F", cex = 4)
+
+#### PANEL 7 - SIGMA0 OUM#####
+params_by_model <- list()
+for (p in c(
+  "no.missing", "ten.rand", "fifty.rand", "ninety.rand",
+  "ten.phy", "fifty.phy", "ninety.phy",
+  "ten.corr", "fifty.corr", "ninety.corr"
+)) {
+  # filename=paste0(p,'_param_hists.pdf')
+  dat <- get(p)
+  dat <- filter(dat, Generating_model == "OUM")
+  dat <- dat$sigma0.est
+  # REMOVE TWO OUTLIERS AT EXTREMES OF DISTRIBUTIOMN FOR NICER PLOTS
+  dat <- sort(dat)[6:996]
+  # hist(dat,main=p)
+  params_by_model[[length(params_by_model) + 1]] <- dat
+  names(params_by_model)[length(params_by_model)] <- p
 }
-bias=unlist(bias)/theta0
-biastable[8,]=round(bias,4)
-prec=unlist(prec)/theta0
-prectable[8,]=round(prec,4)
+boxplot(params_by_model, col = "lightgrey", show.names = F)
 
-lines(x=c(-100,100),y=c(theta0,theta0),lty=2)
-text(x=10.5,y=10.15,labels=expression(paste(theta,''['0'],' OUM')),cex=2.5)
-text(x=0.3,y=10.2,labels='H',cex=4)
-
-####PANEL 9 - THETA1 OUM####
-params_by_model=list()
-for (p in c('no.missing','ten.rand','fifty.rand','ninety.rand',
-												'ten.phy','fifty.phy', 'ninety.phy',
-												'ten.corr','fifty.corr','ninety.corr')){
-#filename=paste0(p,'_param_hists.pdf')
-dat=get(p)
-dat=filter(dat,Generating_model=='OUM')
-dat=dat$theta1.est
-#REMOVE TWO OUTLIERS AT EXTREMES OF DISTRIBUTIOMN FOR NICER PLOTS
-dat=sort(dat)[6:996]
-#hist(dat,main=p)
-params_by_model[[length(params_by_model)+1]]=dat
-names(params_by_model)[length(params_by_model)]=p
+prec <- list()
+bias <- list()
+for (m in params_by_model) {
+  prec[length(prec) + 1] <- round(mad(m), 3)
+  bias[length(bias) + 1] <- round(mean(m) - sigma0, 3)
 }
-beeswarm(params_by_model,
-				 corral='random',
-				 cex=0.35,
-				 col='darkgrey',
-				 #at=(1:length(params_by_model))/5,
-					labels='',
-				 ylim=c(10,11.4),
-				 				 pch=19)
-prec=list()
-bias=list()
-for (m in params_by_model){
-	prec[length(prec)+1]=round(mad(m),3)
-	bias[length(bias)+1]=round(mean(m)-theta1,3)
+bias <- unlist(bias) / sigma0
+biastable[7, ] <- round(bias, 4)
+prec <- unlist(prec) / sigma0
+prectable[7, ] <- round(prec, 4)
+
+lines(x = c(-100, 100), y = c(sigma0, sigma0), lty = 2)
+text(x = 10.5, y = 0.75, labels = expression(paste(sigma^2, ""["0"], " OUM")), cex = 2.5)
+text(x = 0.3, y = 0.62, labels = "G", cex = 4)
+
+#### PANEL 8 - THETA0 OUM####
+params_by_model <- list()
+for (p in c(
+  "no.missing", "ten.rand", "fifty.rand", "ninety.rand",
+  "ten.phy", "fifty.phy", "ninety.phy",
+  "ten.corr", "fifty.corr", "ninety.corr"
+)) {
+  # filename=paste0(p,'_param_hists.pdf')
+  dat <- get(p)
+  dat <- filter(dat, Generating_model == "OUM")
+  dat <- dat$theta0.est
+  # REMOVE TWO OUTLIERS AT EXTREMES OF DISTRIBUTIOMN FOR NICER PLOTS
+  dat <- sort(dat)[6:996]
+  # hist(dat,main=p)
+  params_by_model[[length(params_by_model) + 1]] <- dat
+  names(params_by_model)[length(params_by_model)] <- p
 }
-bias=unlist(bias)/theta1
-biastable[9,]=round(bias,4)
-prec=unlist(prec)/theta1
-prectable[9,]=round(prec,4)
+boxplot(params_by_model, col = "lightgrey", show.names = F)
 
-lines(x=c(-100,100),y=c(theta1,theta1),lty=2)
-text(x=10.5,y=10.7,labels=expression(paste(theta['1'],' OUM')),cex=2.5)
-text(x=0.3,y=11.14,labels='I',cex=4)
-
-
-####PANEL 10 - ALPHA OUM####
-params_by_model=list()
-for (p in c('no.missing','ten.rand','fifty.rand','ninety.rand',
-												'ten.phy','fifty.phy', 'ninety.phy',
-												'ten.corr','fifty.corr','ninety.corr')){
-#filename=paste0(p,'_param_hists.pdf')
-dat=get(p)
-dat=filter(dat,Generating_model=='OUM')
-dat=dat$alpha.est
-#REMOVE TWO OUTLIERS AT EXTREMES OF DISTRIBUTIOMN FOR NICER PLOTS
-dat=sort(dat)[6:996]
-#hist(dat,main=p)
-params_by_model[[length(params_by_model)+1]]=dat
-names(params_by_model)[length(params_by_model)]=p
+prec <- list()
+bias <- list()
+for (m in params_by_model) {
+  prec[length(prec) + 1] <- round(mad(m), 3)
+  bias[length(bias) + 1] <- round(mean(m) - theta0, 3)
 }
-beeswarm(params_by_model,
-				 corral='random',
-				 cex=0.35,
-				 col='darkgrey',
-				 ylim=c(0.5,2.5),
-				 				 pch=19,
-				 				 labels=c('nMT','10% rMT','50% rMT','90% rMT',
-				 				 '10% cluMT','50% cluMT', '90% cluMT',
-				 				 '10% corMT','50% corMT', '90% corMT'))
-prec=list()
-bias=list()
-for (m in params_by_model){
-	prec[length(prec)+1]=round(mad(m),3)
-	bias[length(bias)+1]=round(mean(m)-alpha,3)
-}
-bias=unlist(bias)/alpha
-biastable[10,]=round(bias,4)
-prec=unlist(prec)/alpha
-prectable[10,]=round(prec,4)
+bias <- unlist(bias) / theta0
+biastable[8, ] <- round(bias, 4)
+prec <- unlist(prec) / theta0
+prectable[8, ] <- round(prec, 4)
 
-lines(x=c(-100,100),y=c(alpha,alpha),lty=2)
-text(x=10.5,y=1.6,labels=expression(paste(alpha,' OUM')),cex=2.5)
-text(x=0.3,y=2.2,labels='J',cex=4)
+lines(x = c(-100, 100), y = c(theta0, theta0), lty = 2)
+text(x = 10.5, y = 10.15, labels = expression(paste(theta, ""["0"], " OUM")), cex = 2.5)
+text(x = 0.3, y = 10.2, labels = "H", cex = 4)
+
+#### PANEL 9 - THETA1 OUM####
+params_by_model <- list()
+for (p in c(
+  "no.missing", "ten.rand", "fifty.rand", "ninety.rand",
+  "ten.phy", "fifty.phy", "ninety.phy",
+  "ten.corr", "fifty.corr", "ninety.corr"
+)) {
+  # filename=paste0(p,'_param_hists.pdf')
+  dat <- get(p)
+  dat <- filter(dat, Generating_model == "OUM")
+  dat <- dat$theta1.est
+  # REMOVE TWO OUTLIERS AT EXTREMES OF DISTRIBUTIOMN FOR NICER PLOTS
+  dat <- sort(dat)[6:996]
+  # hist(dat,main=p)
+  params_by_model[[length(params_by_model) + 1]] <- dat
+  names(params_by_model)[length(params_by_model)] <- p
+}
+boxplot(params_by_model, col = "lightgrey", show.names = F)
+prec <- list()
+bias <- list()
+for (m in params_by_model) {
+  prec[length(prec) + 1] <- round(mad(m), 3)
+  bias[length(bias) + 1] <- round(mean(m) - theta1, 3)
+}
+bias <- unlist(bias) / theta1
+biastable[9, ] <- round(bias, 4)
+prec <- unlist(prec) / theta1
+prectable[9, ] <- round(prec, 4)
+
+lines(x = c(-100, 100), y = c(theta1, theta1), lty = 2)
+text(x = 10.5, y = 11.35, labels = expression(paste(theta["1"], " OUM")), cex = 2.5)
+text(x = 0.3, y = 11.14, labels = "I", cex = 4)
+
+
+#### PANEL 10 - ALPHA OUM####
+params_by_model <- list()
+for (p in c(
+  "no.missing", "ten.rand", "fifty.rand", "ninety.rand",
+  "ten.phy", "fifty.phy", "ninety.phy",
+  "ten.corr", "fifty.corr", "ninety.corr"
+)) {
+  # filename=paste0(p,'_param_hists.pdf')
+  dat <- get(p)
+  dat <- filter(dat, Generating_model == "OUM")
+  dat <- dat$alpha.est
+  # REMOVE TWO OUTLIERS AT EXTREMES OF DISTRIBUTIOMN FOR NICER PLOTS
+  dat <- sort(dat)[6:996]
+  # hist(dat,main=p)
+  params_by_model[[length(params_by_model) + 1]] <- dat
+  names(params_by_model)[length(params_by_model)] <- p
+}
+boxplot(params_by_model,
+  col = "lightgrey",
+  names = c(
+    "nMT", "10% rMT", "50% rMT", "90% rMT",
+    "10% cluMT", "50% cluMT", "90% cluMT",
+    "10% corMT", "50% corMT", "90% corMT"
+  )
+)
+prec <- list()
+bias <- list()
+for (m in params_by_model) {
+  prec[length(prec) + 1] <- round(mad(m), 3)
+  bias[length(bias) + 1] <- round(mean(m) - alpha, 3)
+}
+bias <- unlist(bias) / alpha
+biastable[10, ] <- round(bias, 4)
+prec <- unlist(prec) / alpha
+prectable[10, ] <- round(prec, 4)
+
+lines(x = c(-100, 100), y = c(alpha, alpha), lty = 2)
+text(x = 10.5, y = 3, labels = expression(paste(alpha, " OUM")), cex = 2.5)
+text(x = 0.3, y = 2.2, labels = "J", cex = 4)
 
 
 dev.off()
-
