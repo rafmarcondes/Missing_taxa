@@ -1,0 +1,78 @@
+library(dplyr)
+library(extRemes)
+
+# parse each simulation file adding relevant results to a dataframe
+dat <- as.data.frame(matrix(nrow = 0, ncol = 2))
+colnames(dat) <- c("AICc_OU", "AICc_BM")
+files <- list.files(path = "/Users/Rafael/Dropbox/data_and_scripts/missdata/corr_results_12sep2018", full.names = T)
+for (f in 1:length(files)) {
+  sim <- readRDS(files[[f]])
+  cat(paste0("Reading sim ", f, " of ", length(files), "
+"))
+  if (sim$Generating_model == "BM" & sim$Nomissing == T) {
+    dat[(nrow(dat) + 1), 1] <- sim$OU_AICc
+    dat[(nrow(dat)), 2] <- sim$BM_AICc
+  }
+}
+
+saveRDS(dat, "/Users/Rafael/Dropbox/data_and_scripts/missdata/lrt_dat.rds")
+
+# proportion of simulations where OU was incorrectly selected over BM by AICc
+OU_prop_aic <- nrow(filter(.data = dat, AICc_OU < AICc_BM)) / nrow(dat)
+
+# for each row, back-calculate the loglik of BM
+dat$BMloglik <- (2 * (300 / (300 - 2 - 1)) - dat$AICc_BM) # where 2 comes from the number of params in BM and 300 from the final ntips
+
+# for each row, back-calculate the loglik of OU
+dat$OUloglik <- (3 * ((300 / 300 - 3 - 1)) - dat$AICc_OU) # where 3 comes from the number of params in OU and 300 from the final ntips
+
+# run LRT for each row (df=difference in number of params between the models)
+dat$LRT_p <- NA
+for (row in 1:nrow(dat)) {
+  dat[row, ncol(dat)] <- lr.test(x = dat[row, 2], y = dat[row, 1], df = 1)$p.value
+}
+
+# proportion of simulations where OU was incorrectly selected over BM by LRT
+OU_prop_lrt <- (nrow(filter(.data = dat, LRT_p < 0.05))) / nrow(dat)
+
+# find delta AICc of BM
+dat$deltaAICc_BM <- NA
+for (row in 1:nrow(dat)) {
+  dat[row, ncol(dat)] <- dat[row, 2] - min(dat[row, 1:2])
+}
+
+dat$conclusion <- NA
+for (row in 1:nrow(dat)) {
+  if (dat[row, 6] == 0 && dat[row, 5] > 0.05) {
+    dat[row, 7] <- "Both correct"
+  }
+  if (dat[row, 6] > 0 && dat[row, 5] > 0.05) {
+    dat[row, 7] <- "AICc incorrect,LRT correct"
+  }
+  if (dat[row, 6] > 0 && dat[row, 5] < 0.05) {
+    dat[row, 7] <- "Both incorrect"
+  }
+  if (dat[row, 6] == 0 && dat[row, 5] < 0.05) {
+    dat[row, 7] <- "AICc correct,LRT incorrect"
+  }
+}
+
+table(dat$conclusion)
+
+# find rows where AICc supports OU and LRT supports BM
+# dat=filter(.data=dat, deltaAICc_BM>0, LRT_p>0.05)
+dat$color <- dat$conclusion
+dat$color <- gsub(x = dat$color, pattern = "Both correct", replacement = "blue")
+dat$color <- gsub(x = dat$color, pattern = "AICc incorrect,LRT correct", replacement = "orange")
+dat$color <- gsub(x = dat$color, pattern = "Both incorrect", replacement = "red")
+
+plot(
+  x = dat$deltaAICc_BM, y = dat$LRT_p, xlim = c(-0.5, 3), col = dat$color,
+  ylab = "LRT p-value", xlab = "deltaAICc of BM"
+)
+legend(
+  x = "topright",
+  legend = c("Both correct", "AICc incorrect,LRT correct", "Both incorrect"),
+  col = c("blue", "orange", "red"),
+  pch = 1
+)
